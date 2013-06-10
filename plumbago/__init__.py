@@ -48,6 +48,17 @@ class Plumbago(object):
                 rlog.setLevel(logging.DEBUG)
             else:
                 rlog.setLevel(logging.INFO)
+            log_file = _log.get('file')
+            if log_file is not None:
+                #remove all other handlers
+                handler = logging.FileHandler(log_file)
+                handler.setLevel(rlog.getEffectiveLevel())
+                handler.setFormatter(rlog.handlers[0].formatter)
+                for h in rlog.handlers:
+                    rlog.removeHandler(h)
+                rlog.addHandler(handler)
+
+
 
         _alerts = config_data['alerts']
         alerts = {}

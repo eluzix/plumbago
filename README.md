@@ -25,6 +25,8 @@ config:
   interval: 60 #data fetch interval in seconds
   logging:
     debug: no
+    #add the file argument to stop writing to stdout and start writing to a file (all log levels)
+    #file: pl.log
 
 agents:
   - name: hipchat

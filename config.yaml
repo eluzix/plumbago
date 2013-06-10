@@ -6,6 +6,7 @@ config:
   interval: 60 #data fetch interval in seconds
   logging:
     debug: no
+    #file: pl.log
 
 agents:
   - name: hipchat
