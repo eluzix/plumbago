@@ -2,7 +2,7 @@ plumbago
 ========
 
 Simple (very!) alerting system for graphite.
-Why not use [seyren][https://github.com/scobal/seyren]? well its too heavy for us (java + Mongodb) so we wrote something to fit our needs.
+Why not use https://github.com/scobal/seyren? well its too heavy for us (java + Mongodb) so we wrote something to fit our needs.
 Plumbago has no ui, nor fancy dashboard but its light, easy to use and easy to customize.
 
 Configuration
