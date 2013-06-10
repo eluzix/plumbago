@@ -1,0 +1,36 @@
+#main configuration section
+config:
+  render: http://graphite:8080/render
+  username: admin
+  password: supersecretpassword
+  interval: 60 #data fetch interval in seconds
+  logging:
+    debug: no
+
+agents:
+  - name: hipchat
+    class: plumbago.agents.HipchatAgent
+    api_key: HipChat_API_KEY
+    room_id: HipChat_ROOM_ID
+    from: plumbago
+    format: text
+    notify: 1
+    error_color: red
+    normal_color: green
+    #template is used to format the message, parameters:
+    #   $name: alert name
+    #   $target: alert target
+    #   $ts: alert timestamp
+    #   $threshold: alert threshold
+    #   $value: alert value
+    normal_template: "OK $name: $target is back to normal $value < $threshold"
+    error_template: "ERROR $name: $target is above threshold $value >= $threshold @demian"
+
+alerts:
+  example_alert:
+    target: diffSeries(servers.DBMaster.memory.MemFree,servers.DBMaster.memory.MemTotal)
+    threshold: 17494441984
+    #seconds to wait between alarms
+    diff: 600
+    agents:
+      - hipchat
