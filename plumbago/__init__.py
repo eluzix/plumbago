@@ -18,7 +18,7 @@ class Alert(object):
         self.name = name
         self.target = conf['target']
         self.threshold = conf['threshold']
-        self.reverse = conf.get('threshold', False)
+        self.reverse = conf.get('reverse', False)
         self.error_cycles = conf.get('error_cycles', 1)
         self.diff = conf['diff']
         self.agents = conf['agents']
@@ -133,7 +133,6 @@ class Plumbago(object):
             if point[1] > alert.last_ts:
                 alert.last_value = point[0]
                 alert.last_ts = point[1]
-
                 if alert.reverse:
                     threshold_crossed = point[0] < alert.threshold
                 else:
