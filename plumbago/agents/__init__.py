@@ -25,6 +25,10 @@ class BaseAgent(object):
         template = template.replace('$value', str(alert.status_value))
         return template
 
+class LoggerAgent(BaseAgent):
+    def alert(self, message, alert):
+        log.error(message)
+
 
 class HipchatAgent(BaseAgent):
     def __init__(self, **kwargs):

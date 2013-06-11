@@ -18,6 +18,8 @@ class Alert(object):
         self.name = name
         self.target = conf['target']
         self.threshold = conf['threshold']
+        self.reverse = conf.get('threshold', False)
+        self.error_cycles = conf.get('error_cycles', 1)
         self.diff = conf['diff']
         self.agents = conf['agents']
 
@@ -26,7 +28,9 @@ class Alert(object):
         self.status = Alert.STATUS_OK
         self.status_ts = 0
         self.status_value = 0
+        self.status_cycle = 0
         self.needs_alert = False
+        self.data_fetched = False
 
 
 class Plumbago(object):
@@ -37,6 +41,7 @@ class Plumbago(object):
         self.configure(config)
 
     def configure(self, config_data):
+        log.info('Loading configurations...')
         self._config_data = config_data
         self._config = config_data['config']
 
@@ -84,11 +89,14 @@ class Plumbago(object):
             agents[name] = agent
         self._agents = agents
 
-    def _fetch_data(self):
+    def _fetch_data(self, target=None):
         try:
             targets = []
-            for alert in self._alerts:
-                targets.append(urllib.quote_plus(self._alerts[alert].target))
+            if target is None:
+                for alert in self._alerts:
+                    targets.append(urllib.quote_plus(self._alerts[alert].target))
+            else:
+                targets.append(urllib.quote_plus(target))
             targets = '&target=%s' % '&target='.join(targets)
 
             url = '%s?from=-5minutes&until=-&format=json%s' % (self._config['render'], targets)
@@ -108,52 +116,73 @@ class Plumbago(object):
             log.error('Error fetching data from graphite api, error: %s', e)
             return None
 
+    def _handle_single_alert(self, alert, points):
+        if points is not None and len(points):
+            #run from end to find last viable datapoint (not null)
+            points.reverse()
+            point = None
+            for p in points:
+                if p[0] is not None:
+                    point = p
+                    break
+
+            if point is None:
+                log.warn('Unable to find non null data point for %s', alert.target)
+                return
+
+            if point[1] > alert.last_ts:
+                alert.last_value = point[0]
+                alert.last_ts = point[1]
+
+                if alert.reverse:
+                    threshold_crossed = point[0] < alert.threshold
+                else:
+                    threshold_crossed = point[0] >= alert.threshold
+
+                if threshold_crossed and alert.status == Alert.STATUS_OK:
+                    alert.status_cycle += 1
+                    if alert.status_cycle >= alert.error_cycles:
+                        #we are moving from OK to ALERT
+                        alert.status = Alert.STATUS_ERROR
+                        alert.status_value = point[0]
+                        alert.status_ts = point[1]
+                        alert.needs_alert = True
+                elif threshold_crossed and alert.status == Alert.STATUS_ERROR:
+                    #another tp inside alert lets see if we need to resend the alert
+                    if alert.status_ts + alert.diff <= point[1]:
+                        alert.status_value = point[0]
+                        alert.status_ts = point[1]
+                        alert.needs_alert = True
+                elif not threshold_crossed and alert.status == Alert.STATUS_ERROR:
+                    #move back from alert to ok status
+                    alert.status = Alert.STATUS_OK
+                    alert.status_value = point[0]
+                    alert.status_ts = point[1]
+                    alert.status_cycle = 0
+                    #needs_alert is True cause we need to know it returned to normal...
+                    alert.needs_alert = True
+                else:
+                    alert.status = Alert.STATUS_OK
+                    alert.status_value = point[0]
+                    alert.status_ts = point[1]
+                    alert.status_cycle = 0
+
+
     def _parse_data(self, data):
         try:
             data = json.loads(data)
             for _alert in data:
                 target = _alert['target'].lower()
-                alert = self._alerts[target]
+                alert = self._alerts.get(target)
+                if alert is None:
+                    continue
+
                 points = _alert.get('datapoints')
-                if points is not None and len(points):
-                    #run from end to find last viable datapoint (not null)
-                    points.reverse()
-                    point = None
-                    for p in points:
-                        if p[0] is not None:
-                            point = p
-                            break
-
-                    if point is None:
-                        log.warn('Unable to find non null data point for %s', target)
-                        continue
-
-                    if point[1] > alert.last_ts:
-                        alert.last_value = point[0]
-                        alert.last_ts = point[1]
-
-                        if point[0] >= alert.threshold and alert.status == Alert.STATUS_OK:
-                            #we are moving from OK to ALERT
-                            alert.status = Alert.STATUS_ERROR
-                            alert.status_value = point[0]
-                            alert.status_ts = point[1]
-                            alert.needs_alert = True
-                        elif point[0] >= alert.threshold and alert.status == Alert.STATUS_ERROR:
-                            #another tp inside alert lets see if we need to resend the alert
-                            if alert.status_ts + alert.diff <= point[1]:
-                                alert.status_value = point[0]
-                                alert.status_ts = point[1]
-                                alert.needs_alert = True
-                        elif point[0] < alert.threshold and alert.status == Alert.STATUS_ERROR:
-                            #move back from alert to ok status
-                            alert.status = Alert.STATUS_OK
-                            alert.status_value = point[0]
-                            alert.status_ts = point[1]
-                            #needs_alert is True cause we need to know it returned to normal...
-                            alert.needs_alert = True
-
+                self._handle_single_alert(alert, points)
+                alert.data_fetched = True
         except Exception as e:
             log.error('Error parsing data, error: %s', e)
+
 
     def _check_alerts(self):
         for alert_target in self._alerts:
@@ -173,6 +202,32 @@ class Plumbago(object):
         while self._running:
             data = self._fetch_data()
             if data is not None:
+                #mark all alerts as need to parse
+                for a in self._alerts:
+                    self._alerts[a].data_fetched = False
+
                 self._parse_data(data)
+
+                for a in self._alerts:
+                    alert = self._alerts[a]
+                    if not alert.data_fetched:
+                        data = self._fetch_data(alert.target)
+                        if data is None:
+                            log.info('Unable to find target %s for single fetch', alert.target)
+                            continue
+                        data = json.loads(data)
+                        if not len(data):
+                            log.info('Graphite sent no data for target: %s', alert.target)
+                            continue
+                        points = data[0].get('datapoints')
+                        self._handle_single_alert(alert, points)
                 self._check_alerts()
             time.sleep(self._config.get('interval', 60))
+
+    def dump_status(self):
+        data = []
+        for target in self._alerts:
+            alert = self._alerts[target]
+            data.append({'name': alert.name, 'target': alert.target, 'status': 'OK' if alert.status == Alert.STATUS_OK else 'ERROR', 'value': alert.status_value, 'threshold': alert.threshold})
+        s = json.dumps(data, indent=1)
+        print s
