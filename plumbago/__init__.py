@@ -51,6 +51,7 @@ class Plumbago(object):
         if _log is not None:
             logging.basicConfig()
             rlog = logging.getLogger()
+            rlog.handlers[0].formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s","%Y-%m-%d %H:%M:%S")
             if _log.get('debug'):
                 rlog.setLevel(logging.DEBUG)
             else:
