@@ -1,12 +1,17 @@
-#main configuration section
 config:
+  #link to the graphite's render script
   render: http://graphite:8080/render
+  #if graphite is protected by http simple auth you can provide username/password
   username: admin
   password: supersecretpassword
+  #graphite query interval in seconds
   interval: 60 #data fetch interval in seconds
+  #(optional, defaults to ./plumbago.pid) where to write plumbago server's pid number
+  pidfile: pl.pid
   logging:
     debug: no
-    #file: pl.log
+    #(optional, defaults to plumbago.log) where to write the log file (all log levels)
+    file: pl.log
 
 agents:
   - name: hipchat
@@ -29,9 +34,16 @@ agents:
 
 alerts:
   example_alert:
+    #graphite target
     target: diffSeries(servers.DBMaster.memory.MemFree,servers.DBMaster.memory.MemTotal)
+    #limit value before alerting
     threshold: 17494441984
+    #(optional, defaults to no) if active it will check if the value goes under the threshold instead of over it
+    reverse: no
+    #(optional, defaults to yes) whether the alert will be checked or not
+    enabled: yes
     #seconds to wait between alarms
-    diff: 600
+    diff: 600 
+    #list of agents
     agents:
       - hipchat
