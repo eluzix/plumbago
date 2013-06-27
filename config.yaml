@@ -24,7 +24,7 @@ agents:
     #   $ts: alert timestamp
     #   $threshold: alert threshold
     #   $value: alert value
-    normal_template: "OK $name: $target is back to normal $value < $threshfdold"
+    normal_template: "OK $name: $target is back to normal $value < $threshold"
     error_template: "ERROR $name: $target is above threshold $value >= $threshold @demian"
 
 alerts:
