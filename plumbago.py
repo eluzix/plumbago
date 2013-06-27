@@ -258,15 +258,19 @@ def main():
         options.disable = False
         startServer(options.config, options.pid)
 
+    if options.kill:
+        options.reload = False
+        options.status = False
+        options.enable = False
+        options.disable = False
+        terminateServer(options.pid)
+
     if options.reload:
         reloadConfig(options.pid)
 
     if options.status:
         os.kill(getPlumbagoPid(options.pid), signal.SIGUSR2)
         getAlertStatus(options.status)
-
-    if options.kill:
-        terminateServer(options.pid)
 
     if options.enable:
         enableAlert(options.enable, options.config, options.pid)
