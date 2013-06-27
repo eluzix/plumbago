@@ -2,8 +2,8 @@ plumbago
 ========
 
 Simple (very!) alerting system for graphite.
-Why not use https://github.com/scobal/seyren? well its too heavy for us (java + Mongodb) so we wrote something to fit our needs.
-Plumbago has no ui, nor fancy dashboard but its light, easy to use and easy to customize.
+Why not use https://github.com/scobal/seyren? Well, it's too heavy for us (java + Mongodb) so we wrote something to fit our own needs.
+Plumbago has no ui nor fancy dashboard but it's lightweight, easy to use and easy to customize.
 
 Configuration
 -------------
@@ -23,10 +23,12 @@ config:
   password: supersecretpassword
   #graphite query interval in seconds
   interval: 60 #data fetch interval in seconds
+  #(optional, defaults to ./plumbago.pid) where to write plumbago server's pid number
+  pidfile: pl.pid
   logging:
     debug: no
-    #add the file argument to stop writing to stdout and start writing to a file (all log levels)
-    #file: pl.log
+    #(optional, defaults to plumbago.log) where to write the log file (all log levels)
+    file: pl.log
 
 agents:
   - name: hipchat
@@ -51,9 +53,14 @@ alerts:
   example_alert:
     #graphite target
     target: diffSeries(servers.DBMaster.memory.MemFree,servers.DBMaster.memory.MemTotal)
+    #limit value before alerting
     threshold: 17494441984
+    #(optional, defaults to no) if active it will check if the value goes under the threshold instead of over it
+    reverse: no
+    #(optional, defaults to yes) whether the alert will be checked or not
+    enabled: yes
     #seconds to wait between alarms
-    diff: 600
+    diff: 600 
     #list of agents
     agents:
       - hipchat
@@ -72,3 +79,19 @@ class CustomAgent(BaseAgent):
 ```
 
 The `alert` method will receive the formatted message and also the alert object.
+
+How to use it
+-------------
+Plumbago is a CLI app, just run it with some of it's options:
+
+python plumbago.py [options]
+
+    -c, --config-file [path]: Path to plumbago config file (defaults to ./config.yaml).
+    -p, --pid-file [path]: Path where to write plumbago pid file (defaults to ./plumbago.pid).
+    -l, --log-file [path]: Path where to write plumbago log file (defaults to ./plumbago.log).
+    -s, --server: Start plumbago server.
+    -r, --reload: Reload plumbago configuration.
+    -k, --kill: Terminate plumbago server.
+    -t, --status [alert_name|all|error|disabled]: Shows alert status.
+    -d, --disable [alert_name|all]: Disable alert. Implies -r.
+    -e, --enable [alert_name|all]: Enable alert. Implies -r.
