@@ -10,6 +10,17 @@ __author__ = 'uzix'
 
 log = logging.getLogger()
 
+class colors:
+    GREEN = '\033[92m'
+    RED = '\033[91m'
+    GRAY = '\033[90m'
+    DEF = '\033[0m'
+
+    def disable(self):
+        self.GREEN = ''
+        self.RED = ''
+        self.GRAY = ''
+        self.DEF = ''
 
 def createDaemon():
     try:
@@ -49,19 +60,19 @@ def getAlertStatus(alertName):
     if alertName == 'all':
         for alert in alerts:
             if alert['status'] == 'OK':
-                print alert['name'] + ': \033[92m' + alert['status'] + '\033[0m'
+                print alert['name'] + ': ' + colors.GREEN + alert['status'] + colors.DEF
             elif alert['status'] == 'DISABLED':
-                print alert['name'] + ': \033[90m' + alert['status'] + '\033[0m'
+                print alert['name'] + ': ' + colors.GRAY + alert['status'] + colors.DEF
             else:
-                print alert['name'] + ': \033[91m' + alert['status'] + '\033[0m'
+                print alert['name'] + ': ' + colors.RED + alert['status'] + colors.DEF
     elif alertName == 'error':
         for alert in alerts:
             if alert['status'] == 'ERROR':
-                print alert['name'] + ': \033[91m' + alert['status'] + '\033[0m'
+                print alert['name'] + ': ' + colors.RED + alert['status'] + colors.DEF
     elif alertName == 'disabled':
         for alert in alerts:
             if alert['status'] == 'DISABLED':
-                print alert['name'] + ': \033[90m' + alert['status'] + '\033[0m'
+                print alert['name'] + ': ' + colors.GRAY + alert['status'] + colors.DEF
     else:
         found = False
         for alert in alerts:
@@ -72,11 +83,11 @@ def getAlertStatus(alertName):
                 print "Value: " + str(alert['value'])
                 print "Threshold: " + str(alert['threshold'])
                 if alert['status'] == 'OK':
-                    print 'Status: \033[92m' + alert['status'] + '\033[0m\n'
+                    print 'Status: ' + colors.GREEN + alert['status'] + colors.DEF
                 elif alert['status'] == 'ERROR':
-                    print 'Status: \033[91m' + alert['status'] + '\033[0m\n'
+                    print 'Status: ' + colors.RED + alert['status'] + colors.DEF
                 else:
-                    print 'Status: \033[90m' + alert['status'] + '\033[0m\n'
+                    print 'Status: ' + colors.GRAY + alert['status'] + colors.DEF
                 break
         if not found:
             print "\nNo alert exists with that name. Try -s all to see the complete list of alerts\n"
