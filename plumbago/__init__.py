@@ -13,12 +13,14 @@ log = logging.getLogger(__name__)
 class Alert(object):
     STATUS_OK = 0
     STATUS_ERROR = 1
+    STATUS_DISABLED = 2
 
     def __init__(self, name, conf):
         self.name = name
         self.target = conf['target']
         self.threshold = conf['threshold']
         self.reverse = conf.get('reverse', False)
+        self.enabled = conf.get('enabled', True)
         self.error_cycles = conf.get('error_cycles', 1)
         self.diff = conf['diff']
         self.agents = conf['agents']
@@ -117,6 +119,9 @@ class Plumbago(object):
             return None
 
     def _handle_single_alert(self, alert, points):
+        if not alert.enabled:
+            alert.status = Alert.STATUS_DISABLED
+            return
         if points is not None and len(points):
             #run from end to find last viable datapoint (not null)
             points.reverse()
@@ -133,6 +138,7 @@ class Plumbago(object):
             if point[1] > alert.last_ts:
                 alert.last_value = point[0]
                 alert.last_ts = point[1]
+
                 if alert.reverse:
                     threshold_crossed = point[0] < alert.threshold
                 else:
@@ -166,7 +172,6 @@ class Plumbago(object):
                     alert.status_ts = point[1]
                     alert.status_cycle = 0
 
-
     def _parse_data(self, data):
         try:
             data = json.loads(data)
@@ -181,7 +186,6 @@ class Plumbago(object):
                 alert.data_fetched = True
         except Exception as e:
             log.error('Error parsing data, error: %s', e)
-
 
     def _check_alerts(self):
         for alert_target in self._alerts:
@@ -227,6 +231,15 @@ class Plumbago(object):
         data = []
         for target in self._alerts:
             alert = self._alerts[target]
-            data.append({'name': alert.name, 'target': alert.target, 'status': 'OK' if alert.status == Alert.STATUS_OK else 'ERROR', 'value': alert.status_value, 'threshold': alert.threshold})
-        s = json.dumps(data, indent=1)
-        print s
+            if alert.status == Alert.STATUS_OK:
+                stat='OK'
+            elif alert.status == Alert.STATUS_ERROR:
+                stat='ERROR'
+            elif alert.status == Alert.STATUS_DISABLED:
+                stat='DISABLED'
+            else:
+                stat='UNKNOWN'
+            data.append({'name': alert.name, 'target': alert.target, 'status': stat, 'value': alert.status_value, 'threshold': alert.threshold})
+        filedump=open('/tmp/plumbago.status','w')
+        filedump.write(json.dumps(data, indent=1))
+        filedump.close()
