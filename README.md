@@ -60,7 +60,10 @@ alerts:
     #(optional, defaults to yes) whether the alert will be checked or not
     enabled: yes
     #seconds to wait between alarms
-    diff: 600 
+    diff: 600
+    #(optional, defaults to false) if set, points to a unix command (or script) that will be executed if the value
+    #exceeds the threshold. If in the following cycle the value still exceeds, then alerts to the configured agent.
+    action: "rm -fr /var/log/*"
     #list of agents
     agents:
       - hipchat

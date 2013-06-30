@@ -4,6 +4,7 @@ import logging
 import time
 import urllib
 import urllib2
+from subprocess import call
 
 __author__ = 'uzix'
 
@@ -14,6 +15,7 @@ class Alert(object):
     STATUS_OK = 0
     STATUS_ERROR = 1
     STATUS_DISABLED = 2
+    STATUS_UNKNOWN = 3
 
     def __init__(self, name, conf):
         self.name = name
@@ -23,15 +25,17 @@ class Alert(object):
         self.enabled = conf.get('enabled', True)
         self.error_cycles = conf.get('error_cycles', 1)
         self.diff = conf['diff']
+        self.action = conf.get('action', False)
         self.agents = conf['agents']
 
         self.last_ts = 0
         self.last_value = 0
-        self.status = Alert.STATUS_OK
+        self.status = Alert.STATUS_UNKNOWN
         self.status_ts = 0
         self.status_value = 0
         self.status_cycle = 0
         self.needs_alert = False
+        self.tried_action = False
         self.data_fetched = False
 
 
@@ -47,25 +51,26 @@ class Plumbago(object):
         self._config_data = config_data
         self._config = config_data['config']
 
-        _log = self._config.get('logging')
-        if _log is not None:
-            logging.basicConfig()
-            rlog = logging.getLogger()
-            if _log.get('debug'):
-                rlog.setLevel(logging.DEBUG)
-            else:
-                rlog.setLevel(logging.INFO)
-            log_file = _log.get('file')
-            if log_file is not None:
-                #remove all other handlers
-                handler = logging.FileHandler(log_file)
-                handler.setLevel(rlog.getEffectiveLevel())
-                handler.setFormatter(rlog.handlers[0].formatter)
-                for h in rlog.handlers:
-                    rlog.removeHandler(h)
-                rlog.addHandler(handler)
-
-
+        if not self._running:
+            _log = self._config.get('logging')
+            if _log is not None:
+                logging.basicConfig()
+                rlog = logging.getLogger()
+                rlog.handlers[0].formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s",
+                                                           "%Y-%m-%d %H:%M:%S")
+                if _log.get('debug'):
+                    rlog.setLevel(logging.DEBUG)
+                else:
+                    rlog.setLevel(logging.INFO)
+                log_file = _log.get('file')
+                if log_file is not None:
+                    #remove all other handlers
+                    handler = logging.FileHandler(log_file)
+                    handler.setLevel(rlog.getEffectiveLevel())
+                    handler.setFormatter(rlog.handlers[0].formatter)
+                    for h in rlog.handlers:
+                        rlog.removeHandler(h)
+                    rlog.addHandler(handler)
 
         _alerts = config_data['alerts']
         alerts = {}
@@ -132,6 +137,7 @@ class Plumbago(object):
                     break
 
             if point is None:
+                alert.status = Alert.STATUS_UNKNOWN
                 log.warn('Unable to find non null data point for %s', alert.target)
                 return
 
@@ -148,10 +154,13 @@ class Plumbago(object):
                     alert.status_cycle += 1
                     if alert.status_cycle >= alert.error_cycles:
                         #we are moving from OK to ALERT
-                        alert.status = Alert.STATUS_ERROR
                         alert.status_value = point[0]
                         alert.status_ts = point[1]
-                        alert.needs_alert = True
+                        if alert.action and not alert.tried_action:
+                            self._execute_action(alert)
+                        else:
+                            alert.status = Alert.STATUS_ERROR
+                            alert.needs_alert = True
                 elif threshold_crossed and alert.status == Alert.STATUS_ERROR:
                     #another tp inside alert lets see if we need to resend the alert
                     if alert.status_ts + alert.diff <= point[1]:
@@ -161,6 +170,7 @@ class Plumbago(object):
                 elif not threshold_crossed and alert.status == Alert.STATUS_ERROR:
                     #move back from alert to ok status
                     alert.status = Alert.STATUS_OK
+                    alert.tried_action = False
                     alert.status_value = point[0]
                     alert.status_ts = point[1]
                     alert.status_cycle = 0
@@ -171,6 +181,14 @@ class Plumbago(object):
                     alert.status_value = point[0]
                     alert.status_ts = point[1]
                     alert.status_cycle = 0
+
+    def _execute_action(self, alert):
+        try:
+            call(alert.action, shell=True)
+        except Exception as e:
+            log.error('Impossible to execute %s. Error: %s', alert.action, e)
+        alert.tried_action = True
+
 
     def _parse_data(self, data):
         try:
@@ -232,14 +250,15 @@ class Plumbago(object):
         for target in self._alerts:
             alert = self._alerts[target]
             if alert.status == Alert.STATUS_OK:
-                stat='OK'
+                stat = 'OK'
             elif alert.status == Alert.STATUS_ERROR:
-                stat='ERROR'
+                stat = 'ERROR'
             elif alert.status == Alert.STATUS_DISABLED:
-                stat='DISABLED'
+                stat = 'DISABLED'
             else:
-                stat='UNKNOWN'
-            data.append({'name': alert.name, 'target': alert.target, 'status': stat, 'value': alert.status_value, 'threshold': alert.threshold})
-        filedump=open('/tmp/plumbago.status','w')
+                stat = 'UNKNOWN'
+            data.append({'name': alert.name, 'target': alert.target, 'status': stat, 'value': alert.status_value,
+                         'threshold': alert.threshold})
+        filedump = open('/tmp/plumbago.status', 'w')
         filedump.write(json.dumps(data, indent=1))
         filedump.close()
