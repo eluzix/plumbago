@@ -258,13 +258,13 @@ def main():
     if not options.reload and not options.status and not options.kill and not options.enable and not options.disable and not options.server:
         print "\nNothing to do..."
         parser.print_usage()
-        exit(0)
+        return
 
     try:
         config = yaml.load(open(options.config, 'r'))
     except:
         print "Could not load configuration file", options.config
-        exit(1)
+        return
 
     if not options.pid :
         config['config']['pidfile'] = definePidFile(config)
