@@ -14,6 +14,7 @@ class Alert(object):
     STATUS_OK = 0
     STATUS_ERROR = 1
     STATUS_DISABLED = 2
+    STATUS_UNKNOWN = 3
 
     def __init__(self, name, conf):
         self.name = name
@@ -27,7 +28,7 @@ class Alert(object):
 
         self.last_ts = 0
         self.last_value = 0
-        self.status = Alert.STATUS_OK
+        self.status = Alert.STATUS_UNKNOWN
         self.status_ts = 0
         self.status_value = 0
         self.status_cycle = 0
@@ -47,26 +48,26 @@ class Plumbago(object):
         self._config_data = config_data
         self._config = config_data['config']
 
-        _log = self._config.get('logging')
-        if _log is not None:
-            logging.basicConfig()
-            rlog = logging.getLogger()
-            rlog.handlers[0].formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s","%Y-%m-%d %H:%M:%S")
-            if _log.get('debug'):
-                rlog.setLevel(logging.DEBUG)
-            else:
-                rlog.setLevel(logging.INFO)
-            log_file = _log.get('file')
-            if log_file is not None:
-                #remove all other handlers
-                handler = logging.FileHandler(log_file)
-                handler.setLevel(rlog.getEffectiveLevel())
-                handler.setFormatter(rlog.handlers[0].formatter)
-                for h in rlog.handlers:
-                    rlog.removeHandler(h)
-                rlog.addHandler(handler)
-
-
+        if not self._running:
+            _log = self._config.get('logging')
+            if _log is not None:
+                logging.basicConfig()
+                rlog = logging.getLogger()
+                rlog.handlers[0].formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s",
+                                                           "%Y-%m-%d %H:%M:%S")
+                if _log.get('debug'):
+                    rlog.setLevel(logging.DEBUG)
+                else:
+                    rlog.setLevel(logging.INFO)
+                log_file = _log.get('file')
+                if log_file is not None:
+                    #remove all other handlers
+                    handler = logging.FileHandler(log_file)
+                    handler.setLevel(rlog.getEffectiveLevel())
+                    handler.setFormatter(rlog.handlers[0].formatter)
+                    for h in rlog.handlers:
+                        rlog.removeHandler(h)
+                    rlog.addHandler(handler)
 
         _alerts = config_data['alerts']
         alerts = {}
@@ -133,6 +134,7 @@ class Plumbago(object):
                     break
 
             if point is None:
+                alert.status = Alert.STATUS_UNKNOWN
                 log.warn('Unable to find non null data point for %s', alert.target)
                 return
 
@@ -233,14 +235,15 @@ class Plumbago(object):
         for target in self._alerts:
             alert = self._alerts[target]
             if alert.status == Alert.STATUS_OK:
-                stat='OK'
+                stat = 'OK'
             elif alert.status == Alert.STATUS_ERROR:
-                stat='ERROR'
+                stat = 'ERROR'
             elif alert.status == Alert.STATUS_DISABLED:
-                stat='DISABLED'
+                stat = 'DISABLED'
             else:
-                stat='UNKNOWN'
-            data.append({'name': alert.name, 'target': alert.target, 'status': stat, 'value': alert.status_value, 'threshold': alert.threshold})
-        filedump=open('/tmp/plumbago.status','w')
+                stat = 'UNKNOWN'
+            data.append({'name': alert.name, 'target': alert.target, 'status': stat, 'value': alert.status_value,
+                         'threshold': alert.threshold})
+        filedump = open('/tmp/plumbago.status', 'w')
         filedump.write(json.dumps(data, indent=1))
         filedump.close()
