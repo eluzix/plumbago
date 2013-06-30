@@ -4,6 +4,7 @@ import logging
 import time
 import urllib
 import urllib2
+from subprocess import call
 
 __author__ = 'uzix'
 
@@ -24,6 +25,7 @@ class Alert(object):
         self.enabled = conf.get('enabled', True)
         self.error_cycles = conf.get('error_cycles', 1)
         self.diff = conf['diff']
+        self.action = conf.get('action', False)
         self.agents = conf['agents']
 
         self.last_ts = 0
@@ -33,6 +35,7 @@ class Alert(object):
         self.status_value = 0
         self.status_cycle = 0
         self.needs_alert = False
+        self.tried_action = False
         self.data_fetched = False
 
 
@@ -151,10 +154,13 @@ class Plumbago(object):
                     alert.status_cycle += 1
                     if alert.status_cycle >= alert.error_cycles:
                         #we are moving from OK to ALERT
-                        alert.status = Alert.STATUS_ERROR
                         alert.status_value = point[0]
                         alert.status_ts = point[1]
-                        alert.needs_alert = True
+                        if alert.action and not alert.tried_action:
+                            self._execute_action(alert)
+                        else:
+                            alert.status = Alert.STATUS_ERROR
+                            alert.needs_alert = True
                 elif threshold_crossed and alert.status == Alert.STATUS_ERROR:
                     #another tp inside alert lets see if we need to resend the alert
                     if alert.status_ts + alert.diff <= point[1]:
@@ -164,6 +170,7 @@ class Plumbago(object):
                 elif not threshold_crossed and alert.status == Alert.STATUS_ERROR:
                     #move back from alert to ok status
                     alert.status = Alert.STATUS_OK
+                    alert.tried_action = False
                     alert.status_value = point[0]
                     alert.status_ts = point[1]
                     alert.status_cycle = 0
@@ -174,6 +181,14 @@ class Plumbago(object):
                     alert.status_value = point[0]
                     alert.status_ts = point[1]
                     alert.status_cycle = 0
+
+    def _execute_action(self, alert):
+        try:
+            call(alert.action, shell=True)
+        except Exception as e:
+            log.error('Impossible to execute %s. Error: %s', alert.action, e)
+        alert.tried_action = True
+
 
     def _parse_data(self, data):
         try:
