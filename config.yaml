@@ -15,7 +15,7 @@ config:
 
 agents:
   - name: hipchat
-    class: plumbago.agents.HipchatAgent
+    class: core.agents.HipchatAgent
     api_key: HipChat_API_KEY
     room_id: HipChat_ROOM_ID
     from: plumbago
