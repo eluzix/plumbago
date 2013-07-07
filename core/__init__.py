@@ -137,7 +137,8 @@ class Plumbago(object):
                     break
 
             if point is None:
-                alert.status = Alert.STATUS_UNKNOWN
+                if alert.enabled:
+                    alert.status = Alert.STATUS_UNKNOWN
                 log.warn('Unable to find non null data point for %s', alert.target)
                 return
 
@@ -258,7 +259,7 @@ class Plumbago(object):
             else:
                 stat = 'UNKNOWN'
             data.append({'name': alert.name, 'target': alert.target, 'status': stat, 'enabled': alert.enabled, 'value': alert.status_value,
-                         'threshold': alert.threshold, 'action': alert.action})
+                         'threshold': alert.threshold, 'action': alert.action, 'reverse': alert.reverse})
         filedump = open('/tmp/plumbago.status', 'w')
         filedump.write(json.dumps(data, indent=1))
         filedump.close()

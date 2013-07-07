@@ -91,6 +91,18 @@ def getAlertStatus(alertName):
                 found = True
                 print "\nName: " + alert['name']
                 print "Target: " + alert['target']
+                try:
+                    print "Enabled: " + alert['enabled']
+                except:
+                    print "Enabled?: True"
+                try:
+                    print "Action: " + alert['action']
+                except:
+                    print "Action?: None"
+                try:
+                    print "Reverse?: " + alert['reverse']
+                except:
+                    print "Reverse?: False"
                 print "Value: " + str(alert['value'])
                 print "Threshold: " + str(alert['threshold'])
                 if alert['status'] == 'OK':
@@ -99,12 +111,13 @@ def getAlertStatus(alertName):
                     print 'Status: ' + colors.RED + alert['status'] + colors.DEF
                 elif alert['status'] == 'DISABLED':
                     print 'Status: ' + colors.GRAY + alert['status'] + colors.DEF
-                else:
+                elif alert['status'] == 'UNKNOWN':
                     print 'Status: ' + colors.YELLOW + alert['status'] + colors.DEF
+                print
                 break
         if not found:
             print "\nNo alert exists with that name. Try -t all to see the complete list of alerts\n"
-    os.remove('/tmp/plumbago.status')
+    #os.remove('/tmp/plumbago.status')
 
 
 def enableAlert(alertName, config, configFile):
