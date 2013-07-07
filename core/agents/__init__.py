@@ -1,5 +1,5 @@
 import logging
-from plumbago import Alert
+from core import Alert
 import hipchat
 
 __author__ = 'uzix'
