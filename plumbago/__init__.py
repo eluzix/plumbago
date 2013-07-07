@@ -257,8 +257,8 @@ class Plumbago(object):
                 stat = 'DISABLED'
             else:
                 stat = 'UNKNOWN'
-            data.append({'name': alert.name, 'target': alert.target, 'status': stat, 'value': alert.status_value,
-                         'threshold': alert.threshold})
+            data.append({'name': alert.name, 'target': alert.target, 'status': stat, 'enabled': alert.enabled, 'value': alert.status_value,
+                         'threshold': alert.threshold, 'action': alert.action})
         filedump = open('/tmp/plumbago.status', 'w')
         filedump.write(json.dumps(data, indent=1))
         filedump.close()
