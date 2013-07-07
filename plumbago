@@ -230,11 +230,14 @@ def defineLogFile(config):
     try:
         return config['config']['logging']['file']
     except:
-        return './plumbago.log'
+        return '/plumbago.log'
 
 
 def main():
     from optparse import OptionParser
+
+    realPath = os.path.realpath(__file__)
+    print realPath
 
     server_running = False
 
