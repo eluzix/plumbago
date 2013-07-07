@@ -43,7 +43,7 @@ alerts:
     #(optional, defaults to yes) whether the alert will be checked or not
     enabled: yes
     #seconds to wait between alarms
-    diff: 600 
+    diff: 600
     #list of agents
     agents:
       - hipchat

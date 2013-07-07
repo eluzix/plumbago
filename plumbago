@@ -6,6 +6,7 @@ import yaml
 import os
 import time
 import json
+import sys
 from core import Plumbago
 
 __author__ = 'uzix'
@@ -223,27 +224,24 @@ def definePidFile(config):
     try:
         return config['config']['pidfile']
     except:
-        return './plumbago.pid'
+        return sys.path[0] + '/plumbago.pid'
 
 
 def defineLogFile(config):
     try:
         return config['config']['logging']['file']
     except:
-        return '/plumbago.log'
+        return sys.path[0] + '/plumbago.log'
 
 
 def main():
     from optparse import OptionParser
 
-    realPath = os.path.realpath(__file__)
-    print realPath
-
     server_running = False
 
     parser = OptionParser()
     parser.add_option("-p", "--pid-file", dest="pid", help="Plumbago pid file", metavar="PID_FILE")
-    parser.add_option("-c", "--config-file", dest="config", default='./config.yaml', help="Plumbago config file",
+    parser.add_option("-c", "--config-file", dest="config", default=sys.path[0] + '/config.yaml', help="Plumbago config file",
                       metavar="CONFIG_FILE")
     parser.add_option("-l", "--log-file", dest="log", help="Plumbago log file", metavar="LOG_FILE")
     parser.add_option("-s", "--server", dest="server", action="store_true", default=False, help="Run Plumbago Server")
