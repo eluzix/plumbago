@@ -47,7 +47,7 @@ class Plumbago(object):
         try:
             self.configure(config)
         except Exception as e:
-            log.error('Misconfiguration. Error is: %s', e)
+            log.error('Misconfiguration. Error parsing %s', e)
     def configure(self, config_data):
         log.info('Loading configurations...')
         self._config_data = config_data
