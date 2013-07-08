@@ -2,12 +2,15 @@
 
 import logging
 import signal
-import yaml
 import os
 import time
 import json
 import sys
+
+import yaml
+
 from core import Plumbago
+
 
 __author__ = 'uzix'
 
@@ -113,7 +116,11 @@ def getAlertStatus(alertName):
                 elif alert['status'] == 2:
                     print 'Status: ' + colors.GRAY + 'DISABLED' + colors.DEF
                 elif alert['status'] == 3:
-                    print 'Status: ' + colors.YELLOW + UNKNOWN + colors.DEF
+                    print 'Status: ' + colors.YELLOW + 'UNKNOWN\n' + colors.DEF
+                try:
+                    print "Comment: " + alert['comment']
+                except:
+                    print "Comment: None"
                 print
                 break
         if not found:

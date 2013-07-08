@@ -27,6 +27,7 @@ class Alert(object):
         self.diff = conf['diff']
         self.action = conf.get('action', False)
         self.agents = conf['agents']
+        self.comment = conf.get('comment', False)
 
         self.last_ts = 0
         self.last_value = 0
@@ -216,7 +217,10 @@ class Plumbago(object):
                     if agent is None:
                         log.warning('Unable to find agent %s for alert %s', ag, alert.name)
                         continue
-                    msg = agent.format_message(alert)
+                    if alert.comment:
+                        msg = agent.format_message(alert) + '\n' + alert.comment
+                    else:
+                        msg = agent.format_message(alert)
                     agent.alert(msg, alert)
                 alert.needs_alert = False
 
@@ -253,7 +257,8 @@ class Plumbago(object):
             alert = self._alerts[name]
             data.append({'name': alert.name, 'target': alert.target, 'status': alert.status,
                          'enabled': str(alert.enabled), 'value': alert.status_value, 'threshold': alert.threshold,
-                         'action': alert.action, 'reverse': str(alert.reverse), 'cycles': alert.error_cycles})
+                         'action': alert.action, 'reverse': str(alert.reverse), 'cycles': alert.error_cycles,
+                         'comment': alert.comment})
         filedump = open('/tmp/plumbago.status', 'w')
         filedump.write(json.dumps(data, indent=1))
         filedump.close()
