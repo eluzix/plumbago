@@ -1,6 +1,10 @@
 import logging
-from core import Alert
+import smtplib
+
 import hipchat
+
+from core import Alert
+
 
 __author__ = 'uzix'
 
@@ -52,3 +56,33 @@ class HipchatAgent(BaseAgent):
             hipster.method(url='rooms/message', method="POST", parameters=params)
         except Exception as ex:
             log.error('Error sending alert message to hipchat, message: %s, error: %s', message, ex)
+
+class EmailAgent(BaseAgent):
+    def __init__(self, **kwargs):
+        super(EmailAgent, self).__init__(**kwargs)
+
+        self.host = kwargs['host']
+        self.port = kwargs['port']
+        self.tls = kwargs['use_tls']
+        self.user = kwargs['username']
+        self.pass_ = kwargs['password']
+        self.from_ = kwargs['from']
+        self.to = kwargs['to']
+        self.subject = kwargs['subject']
+
+    def alert(self, message, alert):
+
+        msg = 'From: %s\r\n', self.from_
+        msg += 'To: %s\r\n', self.to.split()
+        msg += 'Subject: %s\r\n\r\n', self.subject
+        msg += '%s', message
+
+        try:
+            smtp_server = smtplib.SMTP(self.host, self.port)
+            if self.tls:
+                smtp_server.starttls()
+            smtp_server.login(self.user, self.pass_)
+            smtp_server.sendmail(self.from_, self.to, msg)
+            log.debug('[EmailAgent] message: %s', message)
+        except Exception as ex:
+            log.error('Error sending alert e-mail message, message: %s, error: %s', message, ex)
