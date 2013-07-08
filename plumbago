@@ -64,26 +64,26 @@ def getAlertStatus(alertName):
     alerts = json.load(statusfile)
     if alertName == 'all':
         for alert in alerts:
-            if alert['status'] == 'OK':
-                print alert['name'] + ': ' + colors.GREEN + alert['status'] + colors.DEF
-            elif alert['status'] == 'DISABLED':
-                print alert['name'] + ': ' + colors.GRAY + alert['status'] + colors.DEF
-            elif alert['status'] == 'UNKNOWN':
-                print alert['name'] + ': ' + colors.YELLOW + alert['status'] + colors.DEF
+            if alert['status'] == 0:
+                print alert['name'] + ': ' + colors.GREEN + 'OK' + colors.DEF
+            elif alert['status'] == 2:
+                print alert['name'] + ': ' + colors.GRAY + 'DISABLED' + colors.DEF
+            elif alert['status'] == 3:
+                print alert['name'] + ': ' + colors.YELLOW + 'UNKNOWN' + colors.DEF
             else:
-                print alert['name'] + ': ' + colors.RED + alert['status'] + colors.DEF
+                print alert['name'] + ': ' + colors.RED + 'ERROR' + colors.DEF
     elif alertName == 'error':
         for alert in alerts:
-            if alert['status'] == 'ERROR':
-                print alert['name'] + ': ' + colors.RED + alert['status'] + colors.DEF
+            if alert['status'] == 1:
+                print alert['name'] + ': ' + colors.RED + 'ERROR' + colors.DEF
     elif alertName == 'disabled':
         for alert in alerts:
-            if alert['status'] == 'DISABLED':
-                print alert['name'] + ': ' + colors.GRAY + alert['status'] + colors.DEF
+            if alert['status'] == 2:
+                print alert['name'] + ': ' + colors.GRAY + 'DISABLED' + colors.DEF
     elif alertName == 'unknown':
         for alert in alerts:
-            if alert['status'] == 'UNKNOWN':
-                print alert['name'] + ': ' + colors.YELLOW + alert['status'] + colors.DEF
+            if alert['status'] == 3:
+                print alert['name'] + ': ' + colors.YELLOW + 'UNKNOWN' + colors.DEF
     else:
         found = False
         for alert in alerts:
@@ -105,19 +105,20 @@ def getAlertStatus(alertName):
                     print "Reverse?: False"
                 print "Value: " + str(alert['value'])
                 print "Threshold: " + str(alert['threshold'])
-                if alert['status'] == 'OK':
-                    print 'Status: ' + colors.GREEN + alert['status'] + colors.DEF
-                elif alert['status'] == 'ERROR':
-                    print 'Status: ' + colors.RED + alert['status'] + colors.DEF
-                elif alert['status'] == 'DISABLED':
-                    print 'Status: ' + colors.GRAY + alert['status'] + colors.DEF
-                elif alert['status'] == 'UNKNOWN':
-                    print 'Status: ' + colors.YELLOW + alert['status'] + colors.DEF
+                print "Cycles: " + str(alert['cycles'])
+                if alert['status'] == 0:
+                    print 'Status: ' + colors.GREEN + 'OK' + colors.DEF
+                elif alert['status'] == 1:
+                    print 'Status: ' + colors.RED + 'ERROR' + colors.DEF
+                elif alert['status'] == 2:
+                    print 'Status: ' + colors.GRAY + 'DISABLED' + colors.DEF
+                elif alert['status'] == 3:
+                    print 'Status: ' + colors.YELLOW + UNKNOWN + colors.DEF
                 print
                 break
         if not found:
             print "\nNo alert exists with that name. Try -t all to see the complete list of alerts\n"
-    #os.remove('/tmp/plumbago.status')
+    os.remove('/tmp/plumbago.status')
 
 
 def enableAlert(alertName, config, configFile):

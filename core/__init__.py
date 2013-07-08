@@ -44,8 +44,10 @@ class Plumbago(object):
         self._running = False
         self._alerts = {}
         self._agents = {}
-        self.configure(config)
-
+        try:
+            self.configure(config)
+        except Exception as e:
+            log.error('Misconfiguration. Error is: %s', e)
     def configure(self, config_data):
         log.info('Loading configurations...')
         self._config_data = config_data
@@ -137,8 +139,7 @@ class Plumbago(object):
                     break
 
             if point is None:
-                if alert.enabled:
-                    alert.status = Alert.STATUS_UNKNOWN
+                alert.status = Alert.STATUS_UNKNOWN
                 log.warn('Unable to find non null data point for %s', alert.target)
                 return
 
@@ -248,18 +249,11 @@ class Plumbago(object):
 
     def dump_status(self):
         data = []
-        for target in self._alerts:
-            alert = self._alerts[target]
-            if alert.status == Alert.STATUS_OK:
-                stat = 'OK'
-            elif alert.status == Alert.STATUS_ERROR:
-                stat = 'ERROR'
-            elif alert.status == Alert.STATUS_DISABLED:
-                stat = 'DISABLED'
-            else:
-                stat = 'UNKNOWN'
-            data.append({'name': alert.name, 'target': alert.target, 'status': stat, 'enabled': alert.enabled, 'value': alert.status_value,
-                         'threshold': alert.threshold, 'action': alert.action, 'reverse': alert.reverse})
+        for name in self._alerts:
+            alert = self._alerts[name]
+            data.append({'name': alert.name, 'target': alert.target, 'status': alert.status,
+                         'enabled': str(alert.enabled), 'value': alert.status_value, 'threshold': alert.threshold,
+                         'action': alert.action, 'reverse': str(alert.reverse), 'cycles': alert.error_cycles})
         filedump = open('/tmp/plumbago.status', 'w')
         filedump.write(json.dumps(data, indent=1))
         filedump.close()
