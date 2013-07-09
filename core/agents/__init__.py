@@ -2,6 +2,7 @@ import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
 import base64
 import urllib2
 import hipchat
@@ -117,6 +118,15 @@ class EmailAgent(BaseAgent):
             part2 = MIMEText(html, 'html')
             msg.attach(part1)
             msg.attach(part2)
+
+            try:
+                file_ = open('/tmp/img.plum', 'rb')
+                img = MIMEImage(file_.read())
+                file_.close()
+                msg.attach(img)
+            except:
+                pass
+
             #header = 'To: ' + to + '\n' + 'From: ' + self.from_ + '\n' + 'Subject: ' + self.subject + '\n\n'
             #msg = header + message
 
