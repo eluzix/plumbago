@@ -94,6 +94,10 @@ class Plumbago(object):
         agents = {}
         for ag in _agents:
             name = ag['name']
+            #We add the graphite url, username and password so the email agent can send a nice graph
+            ag['render'] = self._config['render']
+            ag['graphuser'] = self._config['username']
+            ag['graphpass'] = self._config['password']
             klass = _get_class(ag['class'])
             agent = klass(**ag)
             agents[name] = agent

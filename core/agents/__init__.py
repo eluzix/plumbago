@@ -1,5 +1,7 @@
 import logging
 import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 import hipchat
 
@@ -66,23 +68,57 @@ class EmailAgent(BaseAgent):
         self.tls = kwargs['use_tls']
         self.user = kwargs['username']
         self.pass_ = kwargs['password']
+
         self.from_ = kwargs['from']
         self.to = kwargs['to']
         self.subject = kwargs['subject']
 
+        self.graphurl = kwargs['render']
+        self.graphuser = kwargs['graphuser']
+        self.graphpass = kwargs['graphpass']
+
     def alert(self, message, alert):
 
-        msg = 'From: %s\r\n', self.from_
-        msg += 'To: %s\r\n', self.to.split()
-        msg += 'Subject: %s\r\n\r\n', self.subject
-        msg += '%s', message
+        url = self.graphurl + '?from=-1hour&until=-&target=' + alert.target + '&target=threshold(' + str(alert.threshold) + ',"Threshold",red)'
 
-        try:
-            smtp_server = smtplib.SMTP(self.host, self.port)
-            if self.tls:
-                smtp_server.starttls()
-            smtp_server.login(self.user, self.pass_)
-            smtp_server.sendmail(self.from_, self.to, msg)
-            log.debug('[EmailAgent] message: %s', message)
-        except Exception as ex:
-            log.error('Error sending alert e-mail message, message: %s, error: %s', message, ex)
+        request = urllib2.Request(url)
+        username = self.graphuser
+        if username is not None:
+            password = self.graphpass
+            base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
+            request.add_header("Authorization", "Basic %s" % base64string)
+        result = urllib2.urlopen(request)
+        log.debug(result)
+
+        for to in self.to.split(','):
+            msg = MIMEMultipart('alternative')
+            msg['To'] = to
+            msg['From'] = self.from_
+            msg['Subject'] = self.subject
+
+            text = message
+            html = '''\
+                <html>
+                    <head></head>
+                    <body>
+                        <p>%s</p>
+                        <hr><a href=%s><img src=%s></a>
+                    </body>
+                </html>''' % (message, url, url)
+
+            part1 = MIMEText(text, 'plain')
+            part2 = MIMEText(html, 'html')
+            msg.attach(part1)
+            msg.attach(part2)
+            #header = 'To: ' + to + '\n' + 'From: ' + self.from_ + '\n' + 'Subject: ' + self.subject + '\n\n'
+            #msg = header + message
+
+            try:
+                smtp_server = smtplib.SMTP(self.host, self.port)
+                if self.tls:
+                    smtp_server.starttls()
+                smtp_server.login(self.user, self.pass_)
+                smtp_server.sendmail(self.from_, to, msg.as_string())
+                log.debug('[EmailAgent] message: %s', message)
+            except Exception as ex:
+                log.error('Error sending alert e-mail message, message: %s, error: %s', message, ex)
