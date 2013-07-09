@@ -73,54 +73,54 @@ def getAlertStatus(alertName):
     if alertName == 'all':
         for alert in alerts:
             if alert['status'] == 0:
-                print alert['name'] + ': ' + colors.GREEN + 'OK' + colors.DEF
+                print '%s: %sOK%s' % (alert['name'], colors.GREEN, colors.DEF)
+            elif alert['status'] == 1:
+                print '%s: %sERROR%s' % (alert['name'], colors.RED, colors.DEF)
             elif alert['status'] == 2:
-                print alert['name'] + ': ' + colors.GRAY + 'DISABLED' + colors.DEF
+                print '%s: %sDISABLED%s' % (alert['name'], colors.GRAY, colors.DEF)
             elif alert['status'] == 3:
-                print alert['name'] + ': ' + colors.YELLOW + 'UNKNOWN' + colors.DEF
-            else:
-                print alert['name'] + ': ' + colors.RED + 'ERROR' + colors.DEF
+                print '%s: %sUNKNOWN%s' % (alert['name'], colors.YELLOW, colors.DEF)
 
     elif alertName == 'error':
         for alert in alerts:
             if alert['status'] == 1:
-                print alert['name'] + ': ' + colors.RED + 'ERROR' + colors.DEF
+                print '%s: %sERROR%s' % (alert['name'], colors.RED, colors.DEF)
 
     elif alertName == 'disabled':
         for alert in alerts:
             if alert['status'] == 2:
-                print alert['name'] + ': ' + colors.GRAY + 'DISABLED' + colors.DEF
+                print '%s: %sDISABLED%s' % (alert['name'], colors.GRAY, colors.DEF)
 
     elif alertName == 'unknown':
         for alert in alerts:
             if alert['status'] == 3:
-                print alert['name'] + ': ' + colors.YELLOW + 'UNKNOWN' + colors.DEF
+                print '%s: %sUNKNOWN%s' % (alert['name'], colors.YELLOW, colors.DEF)
     else:
         found = False
         for alert in alerts:
             if alert['name'] == alertName:
                 found = True
-                print "\nName: " + alert['name']
-                print "Target: " + alert['target']
+                print "\nName: %s", alert['name']
+                print "Target: %s", alert['target']
 
                 try:
-                    print "Enabled: " + alert['enabled']
+                    print "Enabled: %s", alert['enabled']
                 except:
                     print "Enabled?: True"
 
                 try:
-                    print "Action: " + alert['action']
+                    print "Action: %s", alert['action']
                 except:
                     print "Action?: None"
 
                 try:
-                    print "Reverse?: " + alert['reverse']
+                    print "Reverse?: %s", alert['reverse']
                 except:
                     print "Reverse?: False"
 
-                print "Value: " + str(alert['value'])
-                print "Threshold: " + str(alert['threshold'])
-                print "Cycles: " + str(alert['cycles'])
+                print "Value: %s", str(alert['value'])
+                print "Threshold: %s", str(alert['threshold'])
+                print "Cycles: %s", str(alert['cycles'])
 
                 if alert['status'] == 0:
                     print 'Status: ' + colors.GREEN + 'OK' + colors.DEF
@@ -132,7 +132,7 @@ def getAlertStatus(alertName):
                     print 'Status: ' + colors.YELLOW + 'UNKNOWN\n' + colors.DEF
 
                 try:
-                    print "Comment: " + alert['comment']
+                    print "Comment: %s", alert['comment']
                 except:
                     print "Comment: None"
 
