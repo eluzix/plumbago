@@ -92,9 +92,11 @@ class EmailAgent(BaseAgent):
 
         try:
             file_ = open('/tmp/img.plum','wb')
-            file.write(result)
-            file.close()
-        
+            file_.write(result)
+            file_.close()
+        except:
+            pass
+
         for to in self.to.split(','):
             msg = MIMEMultipart('alternative')
             msg['To'] = to
