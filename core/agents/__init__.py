@@ -5,6 +5,7 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 import base64
 import urllib2
+
 import hipchat
 
 from core import Alert
@@ -82,7 +83,6 @@ class EmailAgent(BaseAgent):
     def alert(self, message, alert):
 
         url = self.graphurl + '?from=-1hour&until=-&target=' + alert.target + '&target=threshold(' + str(alert.threshold) + ',"Threshold",red)&bgcolor=black&fgcolor=white&fontBold=true&height=300&width=600&lineWidth=3&colorList=blue,red'
-
         request = urllib2.Request(url)
         username = self.graphuser
         if username is not None:
@@ -95,47 +95,42 @@ class EmailAgent(BaseAgent):
             file_ = open('/tmp/img.plum','wb')
             file_.write(result)
             file_.close()
-        except:
-            pass
+        except Exception as ex:
+            log.error('Could not save image. Error: %s', ex)
+
+        msg = MIMEMultipart()
+        msg['To'] = to
+        msg['From'] = self.from_
+        msg['Subject'] = self.subject
+
+        text = message
+        html = '''\
+            <html>
+                <head></head>
+                <body>
+                    <p>%s</p>
+                    <hr><hr>
+                </body>
+            </html>''' % message
+
+        msg.attach(MIMEText(text, 'plain'))
+        msg.attach(MIMEText(html, 'html'))
+
+        try:
+            file_ = open('/tmp/img.plum', 'rb')
+            img = MIMEImage(file_.read())
+            file_.close()
+            msg.attach(img)
+        except Exception as ex:
+            log.error('Could not attach image. Error: %s', ex)
 
         for to in self.to.split(','):
-            msg = MIMEMultipart()
-            msg['To'] = to
-            msg['From'] = self.from_
-            msg['Subject'] = self.subject
-
-            text = message
-            html = '''\
-                <html>
-                    <head></head>
-                    <body>
-                        <p>%s</p>
-                        <hr><hr>
-                    </body>
-                </html>''' % message
-
-            part1 = MIMEText(text, 'plain')
-            part2 = MIMEText(html, 'html')
-            msg.attach(part1)
-            msg.attach(part2)
-
-            try:
-                file_ = open('/tmp/img.plum', 'rb')
-                img = MIMEImage(file_.read())
-                file_.close()
-                msg.attach(img)
-            except Exception as ex:
-                log.error('Could not attach image. Error: %s', ex)
-
-            #header = 'To: ' + to + '\n' + 'From: ' + self.from_ + '\n' + 'Subject: ' + self.subject + '\n\n'
-            #msg = header + message
-
             try:
                 smtp_server = smtplib.SMTP(self.host, self.port)
                 if self.tls:
                     smtp_server.starttls()
-                smtp_server.login(self.user, self.pass_)
+                if self.user and self.pass_:
+                    smtp_server.login(self.user, self.pass_)
                 smtp_server.sendmail(self.from_, to, msg.as_string())
-                log.debug('[EmailAgent] message: %s', msg.as_string())
             except Exception as ex:
-                log.error('Error sending alert e-mail message. Message: %s. Error: %s', message, ex)
+                log.error('Error sending alert e-mail message to %s. Message: %s. Error: %s', to, message, ex)
