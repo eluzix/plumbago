@@ -59,7 +59,7 @@ class HipchatAgent(BaseAgent):
             log.debug('[HipchatAgent] message: %s', message)
             hipster.method(url='rooms/message', method="POST", parameters=params)
         except Exception as ex:
-            log.error('Error sending alert message to hipchat, message: %s, error: %s', message, ex)
+            log.error('Error sending alert message to hipchat. Message: %s. Error: %s', message, ex)
 
 class EmailAgent(BaseAgent):
     def __init__(self, **kwargs):
@@ -124,8 +124,8 @@ class EmailAgent(BaseAgent):
                 img = MIMEImage(file_.read())
                 file_.close()
                 msg.attach(img)
-            except:
-                pass
+            except Exception as ex:
+                log.error('Could not attach image. Error: %s', ex)
 
             #header = 'To: ' + to + '\n' + 'From: ' + self.from_ + '\n' + 'Subject: ' + self.subject + '\n\n'
             #msg = header + message
@@ -138,4 +138,4 @@ class EmailAgent(BaseAgent):
                 smtp_server.sendmail(self.from_, to, msg.as_string())
                 log.debug('[EmailAgent] message: %s', message)
             except Exception as ex:
-                log.error('Error sending alert e-mail message, message: %s, error: %s', message, ex)
+                log.error('Error sending alert e-mail message. Message: %s. Error: %s', message, ex)
