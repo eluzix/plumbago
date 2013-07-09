@@ -53,10 +53,12 @@ agents:
     class: core.agents.EmailAgent
     host: smtp.yourserver.com
     port: 25
+    # Set to yes if your server requires TLS
     use_tls: no
     username: smtp_user
     password: smtp_pass
     from: plumbago@plumbagoserver
+    # Comma separated list of detination e-mails
     to: 'yourmail@domain.com, hismail@domain.com'
     subject: Plumbago alert!
     normal_template: "OK $name: $target is back to normal $value < $threshold"
