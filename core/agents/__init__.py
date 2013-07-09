@@ -103,7 +103,6 @@ class EmailAgent(BaseAgent):
 
         # Prepare the header
         msg = MIMEMultipart()
-        msg['To'] = to
         msg['From'] = self.from_
         msg['Subject'] = self.subject
 
@@ -134,6 +133,7 @@ class EmailAgent(BaseAgent):
 
         # Loop through the e-mail addresses and send the e-mail to all of them
         for to in self.to.split(','):
+            msg['To'] = to
             try:
                 smtp_server = smtplib.SMTP(self.host, self.port)
                 if self.tls:
