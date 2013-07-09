@@ -27,6 +27,7 @@ class Alert(object):
         self.diff = conf['diff']
         self.action = conf.get('action', False)
         self.agents = conf['agents']
+        self.comment = conf.get('comment', False)
 
         self.last_ts = 0
         self.last_value = 0
@@ -44,8 +45,10 @@ class Plumbago(object):
         self._running = False
         self._alerts = {}
         self._agents = {}
-        self.configure(config)
-
+        try:
+            self.configure(config)
+        except Exception as e:
+            log.error('Misconfiguration. Error parsing %s', e)
     def configure(self, config_data):
         log.info('Loading configurations...')
         self._config_data = config_data
@@ -91,6 +94,10 @@ class Plumbago(object):
         agents = {}
         for ag in _agents:
             name = ag['name']
+            #We add the graphite url, username and password so the email agent can send a nice graph
+            ag['render'] = self._config['render']
+            ag['graphuser'] = self._config['username']
+            ag['graphpass'] = self._config['password']
             klass = _get_class(ag['class'])
             agent = klass(**ag)
             agents[name] = agent
@@ -214,7 +221,10 @@ class Plumbago(object):
                     if agent is None:
                         log.warning('Unable to find agent %s for alert %s', ag, alert.name)
                         continue
-                    msg = agent.format_message(alert)
+                    if alert.comment:
+                        msg = agent.format_message(alert) + '\n' + alert.comment
+                    else:
+                        msg = agent.format_message(alert)
                     agent.alert(msg, alert)
                 alert.needs_alert = False
 
@@ -247,18 +257,12 @@ class Plumbago(object):
 
     def dump_status(self):
         data = []
-        for target in self._alerts:
-            alert = self._alerts[target]
-            if alert.status == Alert.STATUS_OK:
-                stat = 'OK'
-            elif alert.status == Alert.STATUS_ERROR:
-                stat = 'ERROR'
-            elif alert.status == Alert.STATUS_DISABLED:
-                stat = 'DISABLED'
-            else:
-                stat = 'UNKNOWN'
-            data.append({'name': alert.name, 'target': alert.target, 'status': stat, 'value': alert.status_value,
-                         'threshold': alert.threshold})
+        for name in self._alerts:
+            alert = self._alerts[name]
+            data.append({'name': alert.name, 'target': alert.target, 'status': alert.status,
+                         'enabled': str(alert.enabled), 'value': alert.status_value, 'threshold': alert.threshold,
+                         'action': alert.action, 'reverse': str(alert.reverse), 'cycles': alert.error_cycles,
+                         'comment': alert.comment})
         filedump = open('/tmp/plumbago.status', 'w')
         filedump.write(json.dumps(data, indent=1))
         filedump.close()

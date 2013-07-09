@@ -2,11 +2,15 @@
 
 import logging
 import signal
-import yaml
 import os
 import time
 import json
-from plumbago import Plumbago
+import sys
+
+import yaml
+
+from core import Plumbago
+
 
 __author__ = 'uzix'
 
@@ -63,26 +67,26 @@ def getAlertStatus(alertName):
     alerts = json.load(statusfile)
     if alertName == 'all':
         for alert in alerts:
-            if alert['status'] == 'OK':
-                print alert['name'] + ': ' + colors.GREEN + alert['status'] + colors.DEF
-            elif alert['status'] == 'DISABLED':
-                print alert['name'] + ': ' + colors.GRAY + alert['status'] + colors.DEF
-            elif alert['status'] == 'UNKNOWN':
-                print alert['name'] + ': ' + colors.YELLOW + alert['status'] + colors.DEF
+            if alert['status'] == 0:
+                print alert['name'] + ': ' + colors.GREEN + 'OK' + colors.DEF
+            elif alert['status'] == 2:
+                print alert['name'] + ': ' + colors.GRAY + 'DISABLED' + colors.DEF
+            elif alert['status'] == 3:
+                print alert['name'] + ': ' + colors.YELLOW + 'UNKNOWN' + colors.DEF
             else:
-                print alert['name'] + ': ' + colors.RED + alert['status'] + colors.DEF
+                print alert['name'] + ': ' + colors.RED + 'ERROR' + colors.DEF
     elif alertName == 'error':
         for alert in alerts:
-            if alert['status'] == 'ERROR':
-                print alert['name'] + ': ' + colors.RED + alert['status'] + colors.DEF
+            if alert['status'] == 1:
+                print alert['name'] + ': ' + colors.RED + 'ERROR' + colors.DEF
     elif alertName == 'disabled':
         for alert in alerts:
-            if alert['status'] == 'DISABLED':
-                print alert['name'] + ': ' + colors.GRAY + alert['status'] + colors.DEF
+            if alert['status'] == 2:
+                print alert['name'] + ': ' + colors.GRAY + 'DISABLED' + colors.DEF
     elif alertName == 'unknown':
         for alert in alerts:
-            if alert['status'] == 'UNKNOWN':
-                print alert['name'] + ': ' + colors.YELLOW + alert['status'] + colors.DEF
+            if alert['status'] == 3:
+                print alert['name'] + ': ' + colors.YELLOW + 'UNKNOWN' + colors.DEF
     else:
         found = False
         for alert in alerts:
@@ -90,16 +94,34 @@ def getAlertStatus(alertName):
                 found = True
                 print "\nName: " + alert['name']
                 print "Target: " + alert['target']
+                try:
+                    print "Enabled: " + alert['enabled']
+                except:
+                    print "Enabled?: True"
+                try:
+                    print "Action: " + alert['action']
+                except:
+                    print "Action?: None"
+                try:
+                    print "Reverse?: " + alert['reverse']
+                except:
+                    print "Reverse?: False"
                 print "Value: " + str(alert['value'])
                 print "Threshold: " + str(alert['threshold'])
-                if alert['status'] == 'OK':
-                    print 'Status: ' + colors.GREEN + alert['status'] + colors.DEF
-                elif alert['status'] == 'ERROR':
-                    print 'Status: ' + colors.RED + alert['status'] + colors.DEF
-                elif alert['status'] == 'DISABLED':
-                    print 'Status: ' + colors.GRAY + alert['status'] + colors.DEF
-                else:
-                    print 'Status: ' + colors.YELLOW + alert['status'] + colors.DEF
+                print "Cycles: " + str(alert['cycles'])
+                if alert['status'] == 0:
+                    print 'Status: ' + colors.GREEN + 'OK' + colors.DEF
+                elif alert['status'] == 1:
+                    print 'Status: ' + colors.RED + 'ERROR' + colors.DEF
+                elif alert['status'] == 2:
+                    print 'Status: ' + colors.GRAY + 'DISABLED' + colors.DEF
+                elif alert['status'] == 3:
+                    print 'Status: ' + colors.YELLOW + 'UNKNOWN\n' + colors.DEF
+                try:
+                    print "Comment: " + alert['comment']
+                except:
+                    print "Comment: None"
+                print
                 break
         if not found:
             print "\nNo alert exists with that name. Try -t all to see the complete list of alerts\n"
@@ -223,14 +245,14 @@ def definePidFile(config):
     try:
         return config['config']['pidfile']
     except:
-        return './plumbago.pid'
+        return sys.path[0] + '/plumbago.pid'
 
 
 def defineLogFile(config):
     try:
         return config['config']['logging']['file']
     except:
-        return './plumbago.log'
+        return sys.path[0] + '/plumbago.log'
 
 
 def main():
@@ -240,7 +262,7 @@ def main():
 
     parser = OptionParser()
     parser.add_option("-p", "--pid-file", dest="pid", help="Plumbago pid file", metavar="PID_FILE")
-    parser.add_option("-c", "--config-file", dest="config", default='./config.yaml', help="Plumbago config file",
+    parser.add_option("-c", "--config-file", dest="config", default=sys.path[0] + '/config.yaml', help="Plumbago config file",
                       metavar="CONFIG_FILE")
     parser.add_option("-l", "--log-file", dest="log", help="Plumbago log file", metavar="LOG_FILE")
     parser.add_option("-s", "--server", dest="server", action="store_true", default=False, help="Run Plumbago Server")
