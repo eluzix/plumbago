@@ -55,7 +55,8 @@ def createDaemon():
 
 def getPlumbagoPid(pidFile):
     try:
-        return int(open(pidFile, 'r').readline())
+        with open(pidFile, 'r') as _pidFile:
+            return int(_pidFile.readline())
     except:
         print "Could not open Plumbago pidfile", pidFile
         exit(1)
@@ -63,8 +64,12 @@ def getPlumbagoPid(pidFile):
 
 def getAlertStatus(alertName):
     time.sleep(1)
-    statusfile = open('/tmp/plumbago.status', 'r')
-    alerts = json.load(statusfile)
+    try:
+        with open('/tmp/plumbago.status', 'r') as statusfile:
+            alerts = json.load(statusfile)
+    except Exception as ex:
+        log.error('Failed to load alerts status. Error: %s', ex)
+
     if alertName == 'all':
         for alert in alerts:
             if alert['status'] == 0:
@@ -75,14 +80,17 @@ def getAlertStatus(alertName):
                 print alert['name'] + ': ' + colors.YELLOW + 'UNKNOWN' + colors.DEF
             else:
                 print alert['name'] + ': ' + colors.RED + 'ERROR' + colors.DEF
+
     elif alertName == 'error':
         for alert in alerts:
             if alert['status'] == 1:
                 print alert['name'] + ': ' + colors.RED + 'ERROR' + colors.DEF
+
     elif alertName == 'disabled':
         for alert in alerts:
             if alert['status'] == 2:
                 print alert['name'] + ': ' + colors.GRAY + 'DISABLED' + colors.DEF
+
     elif alertName == 'unknown':
         for alert in alerts:
             if alert['status'] == 3:
@@ -94,21 +102,26 @@ def getAlertStatus(alertName):
                 found = True
                 print "\nName: " + alert['name']
                 print "Target: " + alert['target']
+
                 try:
                     print "Enabled: " + alert['enabled']
                 except:
                     print "Enabled?: True"
+
                 try:
                     print "Action: " + alert['action']
                 except:
                     print "Action?: None"
+
                 try:
                     print "Reverse?: " + alert['reverse']
                 except:
                     print "Reverse?: False"
+
                 print "Value: " + str(alert['value'])
                 print "Threshold: " + str(alert['threshold'])
                 print "Cycles: " + str(alert['cycles'])
+
                 if alert['status'] == 0:
                     print 'Status: ' + colors.GREEN + 'OK' + colors.DEF
                 elif alert['status'] == 1:
@@ -117,10 +130,12 @@ def getAlertStatus(alertName):
                     print 'Status: ' + colors.GRAY + 'DISABLED' + colors.DEF
                 elif alert['status'] == 3:
                     print 'Status: ' + colors.YELLOW + 'UNKNOWN\n' + colors.DEF
+
                 try:
                     print "Comment: " + alert['comment']
                 except:
                     print "Comment: None"
+
                 print
                 break
         if not found:
@@ -133,7 +148,8 @@ def enableAlert(alertName, config, configFile):
     logFile = config['config']['logging']['file']
 
     try:
-        config = yaml.load(open(configFile, 'r'))
+        with open(configFile, 'r') as oldConfig:
+            config = yaml.load(oldConfig)
     except:
         print 'Could not open config file', configFile
         return
@@ -161,11 +177,14 @@ def enableAlert(alertName, config, configFile):
         except:
             print "Alert is already enabled"
             return
-
-    yaml.dump(config, open(configFile, 'w'))
-    config['config']['pidfile'] = pidFile
-    config['config']['logging']['file'] = logFile
-    reloadConfig(config['config']['pidfile'])
+    try:
+        with open(configFile, 'w') as newConfig:
+            yaml.dump(config, newConfig)
+        config['config']['pidfile'] = pidFile
+        config['config']['logging']['file'] = logFile
+        reloadConfig(config['config']['pidfile'])
+    except Exception as ex:
+        log.error('Could not save new config. Error: %s', ex)
 
 
 def disableAlert(alertName, config, configFile):
@@ -173,7 +192,8 @@ def disableAlert(alertName, config, configFile):
     logFile = config['config']['logging']['file']
 
     try:
-        config = yaml.load(open(configFile, 'r'))
+        with open(configFile, 'r') as oldConfig:
+            config = yaml.load(oldConfig)
     except:
         print 'Could not open config file', configFile
         return
@@ -187,11 +207,16 @@ def disableAlert(alertName, config, configFile):
         except:
             print "\nNo alert exists with that name. Try -t all to see the complete list of alerts\n"
             return
+    try:
+        with open(configFile, 'w') as newConfig:
+            yaml.dump(config, newConfig)
+        config['config']['pidfile'] = pidFile
+        config['config']['logging']['file'] = logFile
+        reloadConfig(config['config']['pidfile'])
+    except Exception as ex:
+        log.error('Could not save new config. Error: %s', ex)
 
-    yaml.dump(config, open(configFile, 'w'))
-    config['config']['pidfile'] = pidFile
-    config['config']['logging']['file'] = logFile
-    reloadConfig(config['config']['pidfile'])
+
 
 
 def reloadConfig(pidFile):
@@ -224,7 +249,12 @@ def startServer(config, configFileOpt):
 
     def handler(signum, frame):
         if signum == signal.SIGUSR1:
-            config = yaml.load(open(configFileOpt, 'r'))
+            try:
+                with open(configFileOpt, 'r') as configFile:
+                    config = yaml.load(configFile)
+            except:
+                print "Could not load configuration file", configFileOpt
+                return
             server.configure(config)
         elif signum == signal.SIGUSR2:
             server.dump_status()
@@ -262,7 +292,8 @@ def main():
 
     parser = OptionParser()
     parser.add_option("-p", "--pid-file", dest="pid", help="Plumbago pid file", metavar="PID_FILE")
-    parser.add_option("-c", "--config-file", dest="config", default=sys.path[0] + '/config.yaml', help="Plumbago config file",
+    parser.add_option("-c", "--config-file", dest="config", default=sys.path[0] + '/config.yaml',
+                      help="Plumbago config file",
                       metavar="CONFIG_FILE")
     parser.add_option("-l", "--log-file", dest="log", help="Plumbago log file", metavar="LOG_FILE")
     parser.add_option("-s", "--server", dest="server", action="store_true", default=False, help="Run Plumbago Server")
@@ -283,12 +314,13 @@ def main():
         return
 
     try:
-        config = yaml.load(open(options.config, 'r'))
+        with open(options.config, 'r') as configFile:
+            config = yaml.load(configFile)
     except:
         print "Could not load configuration file", options.config
         return
 
-    if not options.pid :
+    if not options.pid:
         config['config']['pidfile'] = definePidFile(config)
     else:
         config['config']['pidfile'] = options.pid
@@ -336,6 +368,7 @@ def main():
 
         if options.disable:
             disableAlert(options.disable, config, options.config)
+
     elif not options.server:
         print "Plumbago server not running!"
 

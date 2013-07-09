@@ -95,9 +95,8 @@ class EmailAgent(BaseAgent):
 
         # Save the graph to a file to attach it to the e-mail
         try:
-            file_ = open('/tmp/img.plum','wb')
-            file_.write(result)
-            file_.close()
+            with open('/tmp/img.plum','wb') as file_:
+                file_.write(result)
         except Exception as ex:
             log.error('Could not save image. Error: %s', ex)
 
@@ -123,9 +122,8 @@ class EmailAgent(BaseAgent):
 
         # Attach the graph image as MIME object
         try:
-            file_ = open('/tmp/img.plum', 'rb')
-            img = MIMEImage(file_.read())
-            file_.close()
+            with open('/tmp/img.plum', 'rb') as file_:
+                img = MIMEImage(file_.read())
             msg.attach(img)
             os.remove('/tmp/img.plum')
         except Exception as ex:

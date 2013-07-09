@@ -263,6 +263,5 @@ class Plumbago(object):
                          'enabled': str(alert.enabled), 'value': alert.status_value, 'threshold': alert.threshold,
                          'action': alert.action, 'reverse': str(alert.reverse), 'cycles': alert.error_cycles,
                          'comment': alert.comment})
-        filedump = open('/tmp/plumbago.status', 'w')
-        filedump.write(json.dumps(data, indent=1))
-        filedump.close()
+        with open('/tmp/plumbago.status', 'w') as filedump:
+            filedump.write(json.dumps(data, indent=1))
