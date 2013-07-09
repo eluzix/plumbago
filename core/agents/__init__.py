@@ -105,7 +105,7 @@ class EmailAgent(BaseAgent):
                         <p>%s</p>
                         <hr><a href=%s><img src=%s></a>
                     </body>
-                </html>''' % (message, url, url)
+                </html>''' % (message, url, result)
 
             part1 = MIMEText(text, 'plain')
             part2 = MIMEText(html, 'html')
