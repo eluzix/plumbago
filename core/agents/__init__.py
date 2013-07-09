@@ -81,7 +81,7 @@ class EmailAgent(BaseAgent):
 
     def alert(self, message, alert):
 
-        url = self.graphurl + '?from=-1hour&until=-&target=' + alert.target + '&target=threshold(' + str(alert.threshold) + ',"Threshold",red)'
+        url = self.graphurl + '?from=-1hour&until=-&target=' + alert.target + '&target=threshold(' + str(alert.threshold) + ',"Threshold",red)&bgcolor=black&fgcolor=white&fontBold=true&height=300&width=600&lineWidth=3&colorList=blue,red'
 
         request = urllib2.Request(url)
         username = self.graphuser
@@ -99,7 +99,7 @@ class EmailAgent(BaseAgent):
             pass
 
         for to in self.to.split(','):
-            msg = MIMEMultipart('alternative')
+            msg = MIMEMultipart()
             msg['To'] = to
             msg['From'] = self.from_
             msg['Subject'] = self.subject
