@@ -88,9 +88,13 @@ class EmailAgent(BaseAgent):
             password = self.graphpass
             base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
             request.add_header("Authorization", "Basic %s" % base64string)
-        result = urllib2.urlopen(request)
-        log.debug(result.info())
+        result = urllib2.urlopen(request).read()
 
+        try:
+            file_ = open('/tmp/img.plum','wb')
+            file.write(result)
+            file.close()
+        
         for to in self.to.split(','):
             msg = MIMEMultipart('alternative')
             msg['To'] = to
@@ -103,9 +107,9 @@ class EmailAgent(BaseAgent):
                     <head></head>
                     <body>
                         <p>%s</p>
-                        <hr><a href=%s><img src=%s></a>
+                        <hr><a href=%s><img src=/tmp/img.plum></a>
                     </body>
-                </html>''' % (message, url, result)
+                </html>''' % (message, url)
 
             part1 = MIMEText(text, 'plain')
             part2 = MIMEText(html, 'html')
