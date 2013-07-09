@@ -32,7 +32,7 @@ config:
 
 agents:
   - name: hipchat
-    class: plumbago.agents.HipchatAgent
+    class: core.agents.HipchatAgent
     api_key: HipChat_API_KEY
     room_id: HipChat_ROOM_ID
     from: plumbago
@@ -46,6 +46,19 @@ agents:
     #   $ts: alert timestamp
     #   $threshold: alert threshold
     #   $value: alert value
+    normal_template: "OK $name: $target is back to normal $value < $threshold"
+    error_template: "ERROR $name: $target is above threshold $value >= $threshold @demian"
+
+  - name: email
+    class: core.agents.EmailAgent
+    host: smtp.yourserver.com
+    port: 25
+    use_tls: no
+    username: smtp_user
+    password: smtp_pass
+    from: plumbago@plumbagoserver
+    to: 'yourmail@domain.com, hismail@domain.com'
+    subject: Plumbago alert!
     normal_template: "OK $name: $target is back to normal $value < $threshold"
     error_template: "ERROR $name: $target is above threshold $value >= $threshold @demian"
 
@@ -67,6 +80,7 @@ alerts:
     #list of agents
     agents:
       - hipchat
+      - email
 ```
 
 
