@@ -83,6 +83,7 @@ class EmailAgent(BaseAgent):
 
     def alert(self, message, alert):
 
+        # Get a graph from graphite for the alert, authenticating if necessary
         url = self.graphurl + '?from=-1hour&until=-&target=' + alert.target + '&target=threshold(' + str(alert.threshold) + ',"Threshold",red)&bgcolor=black&fgcolor=white&fontBold=true&height=300&width=600&lineWidth=3&colorList=blue,red'
         request = urllib2.Request(url)
         username = self.graphuser
@@ -92,6 +93,7 @@ class EmailAgent(BaseAgent):
             request.add_header("Authorization", "Basic %s" % base64string)
         result = urllib2.urlopen(request).read()
 
+        # Save the graph to a file to attach it to the e-mail
         try:
             file_ = open('/tmp/img.plum','wb')
             file_.write(result)
@@ -99,11 +101,13 @@ class EmailAgent(BaseAgent):
         except Exception as ex:
             log.error('Could not save image. Error: %s', ex)
 
+        # Prepare the header
         msg = MIMEMultipart()
         msg['To'] = to
         msg['From'] = self.from_
         msg['Subject'] = self.subject
 
+        # Prepare html and text alternatives
         text = message
         html = '''\
             <html>
@@ -114,9 +118,11 @@ class EmailAgent(BaseAgent):
                 </body>
             </html>''' % message
 
+        # Attach as MIME objects
         msg.attach(MIMEText(text, 'plain'))
         msg.attach(MIMEText(html, 'html'))
 
+        # Attach the graph image as MIME object
         try:
             file_ = open('/tmp/img.plum', 'rb')
             img = MIMEImage(file_.read())
@@ -126,6 +132,7 @@ class EmailAgent(BaseAgent):
         except Exception as ex:
             log.error('Could not attach image. Error: %s', ex)
 
+        # Loop through the e-mail addresses and send the e-mail to all of them
         for to in self.to.split(','):
             try:
                 smtp_server = smtplib.SMTP(self.host, self.port)
