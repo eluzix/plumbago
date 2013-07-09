@@ -89,7 +89,7 @@ class EmailAgent(BaseAgent):
             base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
             request.add_header("Authorization", "Basic %s" % base64string)
         result = urllib2.urlopen(request)
-        log.debug(result)
+        log.debug(result.info())
 
         for to in self.to.split(','):
             msg = MIMEMultipart('alternative')
