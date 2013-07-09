@@ -136,6 +136,6 @@ class EmailAgent(BaseAgent):
                     smtp_server.starttls()
                 smtp_server.login(self.user, self.pass_)
                 smtp_server.sendmail(self.from_, to, msg.as_string())
-                log.debug('[EmailAgent] message: %s', message)
+                log.debug('[EmailAgent] message: %s', msg.as_string())
             except Exception as ex:
                 log.error('Error sending alert e-mail message. Message: %s. Error: %s', message, ex)
