@@ -5,6 +5,7 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 import base64
 import urllib2
+import os
 
 import hipchat
 
@@ -121,6 +122,7 @@ class EmailAgent(BaseAgent):
             img = MIMEImage(file_.read())
             file_.close()
             msg.attach(img)
+            os.remove('/tmp/img.plum')
         except Exception as ex:
             log.error('Could not attach image. Error: %s', ex)
 
