@@ -110,9 +110,9 @@ class EmailAgent(BaseAgent):
                     <head></head>
                     <body>
                         <p>%s</p>
-                        <hr><a href=%s><img src=/tmp/img.plum></a>
+                        <hr><hr>
                     </body>
-                </html>''' % (message, url)
+                </html>''' % message
 
             part1 = MIMEText(text, 'plain')
             part2 = MIMEText(html, 'html')
