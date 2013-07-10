@@ -3,7 +3,6 @@ import smtplib
 import base64
 import urllib2
 import tempfile
-import shutil
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
@@ -146,5 +145,5 @@ class EmailAgent(BaseAgent):
             except Exception as ex:
                 log.error('Error sending alert e-mail message to %s. Message: %s. Error: %s', to, message, ex)
 
-        finally:
-            shutil.rmtree(tmp_dir, ignore_errors=True)
+        #finally:
+        #    shutil.rmtree(tmp_dir, ignore_errors=True)
