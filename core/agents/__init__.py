@@ -85,7 +85,7 @@ class EmailAgent(BaseAgent):
         # Get a graph from graphite for the alert, authenticating if necessary
         url = '%s?from=-1hour&until=-&target=%s&target=threshold(%s,"Threshold",red)&bgcolor=black&fgcolor=white&fontBold=true&height=300&width=600&lineWidth=3&colorList=blue,red' % (self.graphurl, alert.target, str(alert.threshold))
         #if username is not None:
-        graph = requests.get(url, auth=(self.graphuser, self.graphpass), stream=True)
+        graph = requests.get(url, auth=(self.graphuser, self.graphpass))
         log.debug('[EmailAgent] Getting graph from graphite with url: %s', url)
 
 
