@@ -287,11 +287,19 @@ def defineLogFile(config):
     except:
         return '%s/plumbago.log' % sys.path[0]
 
+def serverRunning(config):
+    if os.path.exists(config['config']['pidfile']):
+        try:
+            os.kill(getPlumbagoPid(config['config']['pidfile']), 0)
+            return True
+        except:
+            print "Removing bogus pid file..."
+            os.remove(config['config']['pidfile'])
+            log.debug('Removed bogus pid file')
+            return False
 
 def main():
     from optparse import OptionParser
-
-    server_running = False
 
     parser = OptionParser()
     parser.add_option("-p", "--pid-file", dest="pid", help="Plumbago pid file", metavar="PID_FILE")
@@ -337,11 +345,8 @@ def main():
         config['config']['logging']['file'] = options.log
     log.debug('Log File is:', config['config']['logging']['file'])
 
-    if os.path.exists(config['config']['pidfile']):
-        server_running = True
-
     if options.server:
-        if not server_running:
+        if not serverRunning(config):
             options.reload = False
             options.status = False
             options.kill = False
@@ -351,7 +356,7 @@ def main():
         else:
             print "Plumbago server already running!"
 
-    if server_running:
+    if serverRunning(config):
         if options.kill:
             options.reload = False
             options.status = False

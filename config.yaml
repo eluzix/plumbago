@@ -1,66 +1,26 @@
-config:
-  #link to the graphite's render script
-  render: http://graphite:8080/render
-  #if graphite is protected by http simple auth you can provide username/password
-  username: admin
-  password: supersecretpassword
-  #graphite query interval in seconds
-  interval: 60 #data fetch interval in seconds
-  #(optional, defaults to ./plumbago.pid) where to write plumbago server's pid number
-  pidfile: pl.pid
-  logging:
-    debug: no
-    #(optional, defaults to plumbago.log) where to write the log file (all log levels)
-    file: pl.log
-
 agents:
-  - name: hipchat
-    class: core.agents.HipchatAgent
-    api_key: HipChat_API_KEY
-    room_id: HipChat_ROOM_ID
-    from: plumbago
-    format: text
-    notify: 1
-    error_color: red
-    normal_color: green
-    #template is used to format the message, parameters:
-    #   $name: alert name
-    #   $target: alert target
-    #   $ts: alert timestamp
-    #   $threshold: alert threshold
-    #   $value: alert value
-    normal_template: "OK $name: $target is back to normal $value < $threshold"
-    error_template: "ERROR $name: $target is above threshold $value >= $threshold @demian"
-
-  - name: email
-    class: core.agents.EmailAgent
-    host: smtp.yourserver.com
-    port: 25
-    use_tls: no
-    username: smtp_user
-    password: smtp_pass
-    from: plumbago@plumbagoserver
-    to: 'yourmail@domain.com, hismail@domain.com'
-    subject: Plumbago alert!
-    normal_template: "OK $name: $target is back to normal $value < $threshold"
-    error_template: "ERROR $name: $target is above threshold $value >= $threshold @demian"
-
+- {api_key: HipChat_API_KEY, class: core.agents.HipchatAgent, error_color: red, error_template: 'ERROR
+    $name: $target is above threshold $value >= $threshold @demian', format: text,
+  from: plumbago, name: hipchat, normal_color: green, normal_template: 'OK $name:
+    $target is back to normal $value < $threshold', notify: 1, room_id: HipChat_ROOM_ID}
+- {class: core.agents.EmailAgent, error_template: 'ERROR $name: $target is above threshold
+    $value >= $threshold @demian', from: plumbago@plumbagoserver, host: smtp.yourserver.com,
+  name: email, normal_template: 'OK $name: $target is back to normal $value < $threshold',
+  password: smtp_pass, port: 25, subject: Plumbago alert!, to: 'yourmail@domain.com,
+    hismail@domain.com', use_tls: false, username: smtp_user}
 alerts:
   example_alert:
-    #graphite target
-    target: diffSeries(servers.DBMaster.memory.MemFree,servers.DBMaster.memory.MemTotal)
-    #limit value before alerting
-    threshold: 17494441984
-    #(optional, defaults to no) if active it will check if the value goes under the threshold instead of over it
-    reverse: no
-    #(optional, defaults to yes) whether the alert will be checked or not
-    enabled: yes
-    #seconds to wait between alarms
+    action: rm -fr /var/log/*
+    agents: [hipchat, email]
     diff: 600
-    #(optional, defaults to false) if set, points to a unix command (or script) that will be executed if the value
-    #exceeds the threshold. If in the following cycle the value still exceeds, then alerts to the configured agent.
-    action: "rm -fr /var/log/*"
-    #list of agents
-    agents:
-      - hipchat
-      - email
+    enabled: true
+    reverse: false
+    target: diffSeries(servers.DBMaster.memory.MemFree,servers.DBMaster.memory.MemTotal)
+    threshold: 17494441984
+config:
+  interval: 60
+  logging: {debug: false, file: pl.log}
+  password: supersecretpassword
+  pidfile: pl.pid
+  render: http://graphite:8080/render
+  username: admin
