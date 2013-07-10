@@ -1,10 +1,10 @@
-import logging
 import smtplib
-import base64
-import urllib2
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
+import logging
+
+import requests
 
 import hipchat
 
@@ -84,14 +84,10 @@ class EmailAgent(BaseAgent):
 
         # Get a graph from graphite for the alert, authenticating if necessary
         url = '%s?from=-1hour&until=-&target=%s&target=threshold(%s,"Threshold",red)&bgcolor=black&fgcolor=white&fontBold=true&height=300&width=600&lineWidth=3&colorList=blue,red' % (self.graphurl, alert.target, str(alert.threshold))
-        request = urllib2.Request(url)
-        username = self.graphuser
-        if username is not None:
-            password = self.graphpass
-            base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
-            request.add_header("Authorization", "Basic %s" % base64string)
+        #if username is not None:
+        graph = requests.get(url, auth=(self.graphuser, self.graphpass), stream=True)
         log.debug('[EmailAgent] Getting graph from graphite with url: %s', url)
-        graph = urllib2.urlopen(request).read()
+
 
         # Prepare the header
         msg = MIMEMultipart()
