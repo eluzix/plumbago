@@ -180,6 +180,7 @@ def enableAlert(alertName, config, configFile):
     try:
         with open(configFile, 'w') as newConfig:
             yaml.dump(config, newConfig)
+        log.info('Enabled', alertName)
         config['config']['pidfile'] = pidFile
         config['config']['logging']['file'] = logFile
         reloadConfig(config['config']['pidfile'])
@@ -210,19 +211,20 @@ def disableAlert(alertName, config, configFile):
     try:
         with open(configFile, 'w') as newConfig:
             yaml.dump(config, newConfig)
+        log.info('Disabled', alertName)
         config['config']['pidfile'] = pidFile
         config['config']['logging']['file'] = logFile
         reloadConfig(config['config']['pidfile'])
     except Exception as ex:
+        print 'Failed to write new configuration'
         log.error('Could not save new config. Error: %s', ex)
-
-
 
 
 def reloadConfig(pidFile):
     try:
         os.kill(getPlumbagoPid(pidFile), signal.SIGUSR1)
         print "Reloading Plumbago configuration..."
+        log.debug('Sent USR1 SIGNAL')
     except:
         print "Plumbago server not running!"
         exit(1)
@@ -232,6 +234,7 @@ def terminateServer(pidFile):
     try:
         os.kill(getPlumbagoPid(pidFile), signal.SIGTERM)
         print "Killing Plumbago server..."
+        log.debug('Sent TERM signal')
     except:
         print "Plumbago server not running!"
         exit(1)
@@ -241,9 +244,8 @@ def startServer(config, configFileOpt):
     print "Starting server..."
     createDaemon()
 
-    pidfile = open(config['config']['pidfile'], 'w')
-    pidfile.write(str(os.getpid()))
-    pidfile.close()
+    with open(config['config']['pidfile'], 'w') as pidfile:
+        pidfile.write(str(os.getpid()))
 
     server = Plumbago(config)
 
@@ -252,8 +254,9 @@ def startServer(config, configFileOpt):
             try:
                 with open(configFileOpt, 'r') as configFile:
                     config = yaml.load(configFile)
-            except:
+            except Exception as ex:
                 print "Could not load configuration file", configFileOpt
+                log.error('Could not load configuration file %s. Error: %s', configFileOpt, ex)
                 return
             server.configure(config)
         elif signum == signal.SIGUSR2:
@@ -316,19 +319,23 @@ def main():
     try:
         with open(options.config, 'r') as configFile:
             config = yaml.load(configFile)
-    except:
+    except Exception as ex:
         print "Could not load configuration file", options.config
+        log.error('Could not load configuration file %s. Error: %s', options.config, ex)
         return
+    log.debug('Config file is:', options.config)
 
     if not options.pid:
         config['config']['pidfile'] = definePidFile(config)
     else:
         config['config']['pidfile'] = options.pid
+    log.debug('Pid File is:', config['config']['pidfile'])
 
     if not options.log:
         config['config']['logging']['file'] = defineLogFile(config)
     else:
         config['config']['logging']['file'] = options.log
+    log.debug('Log File is:', config['config']['logging']['file'])
 
     if os.path.exists(config['config']['pidfile']):
         server_running = True

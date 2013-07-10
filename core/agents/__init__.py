@@ -90,6 +90,7 @@ class EmailAgent(BaseAgent):
             password = self.graphpass
             base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
             request.add_header("Authorization", "Basic %s" % base64string)
+        log.debug('[EmailAgent] Getting graph from graphite with url: %s', url)
         graph = urllib2.urlopen(request).read()
 
         # Prepare the header
@@ -123,6 +124,6 @@ class EmailAgent(BaseAgent):
                 if self.user and self.pass_:
                     smtp_server.login(self.user, self.pass_)
                 smtp_server.sendmail(self.from_, to, msg.as_string())
-                log.debug('[EmailAgent] message: %s. Image url: %s', msg, url)
+                log.debug('[EmailAgent] to: %s. MIME Message: %s',to, msg)
             except Exception as ex:
                 log.error('Error sending alert e-mail message to %s. Message: %s. Error: %s', to, message, ex)
