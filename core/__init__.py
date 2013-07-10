@@ -1,10 +1,11 @@
-import base64
 import json
 import logging
 import time
 import urllib
-import urllib2
 from subprocess import call
+
+import requests
+
 
 __author__ = 'uzix'
 
@@ -121,16 +122,12 @@ class Plumbago(object):
 
             url = '%s?from=-5minutes&until=-&format=json%s' % (self._config['render'], targets)
             log.debug('url = %s', url)
-            request = urllib2.Request(url)
             username = self._config.get('username')
             if username is not None:
                 password = self._config.get('password')
-                base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
-                request.add_header("Authorization", "Basic %s" % base64string)
-            result = urllib2.urlopen(request)
-            data = result.read()
+                data = requests.get(url, auth=(username, password)).json
+            data = requests.get(url).json
 
-            # log.debug("results: %s", data)
             return data
         except Exception as e:
             log.error('Error fetching data from graphite api, error: %s', e)
