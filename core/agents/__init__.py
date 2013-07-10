@@ -3,9 +3,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 import logging
+import json
 
 import requests
-
 import hipchat
 
 from core import Alert
@@ -34,6 +34,7 @@ class BaseAgent(object):
         template = template.replace('$value', str(alert.status_value))
         return template
 
+
 class LoggerAgent(BaseAgent):
     def alert(self, message, alert):
         log.error(message)
@@ -61,6 +62,7 @@ class HipchatAgent(BaseAgent):
             hipster.method(url='rooms/message', method="POST", parameters=params)
         except Exception as ex:
             log.error('Error sending alert message to hipchat. Message: %s. Error: %s', message, ex)
+
 
 class EmailAgent(BaseAgent):
     def __init__(self, **kwargs):
@@ -126,3 +128,25 @@ class EmailAgent(BaseAgent):
                 log.debug('[EmailAgent] to: %s. MIME Message: %s',to, msg)
             except Exception as ex:
                 log.error('Error sending alert e-mail message to %s. Message: %s. Error: %s', to, message, ex)
+
+
+class PagerDutyAgent(BaseAgent):
+    def __init__(self, **kwargs):
+        super(PagerDutyAgent, self).__init__(**kwargs)
+
+        self.api = kwargs['api']
+
+    def alert(self, message, alert):
+        url='https://events.pagerduty.com/generic/2010-04-15/create_event.json'
+
+        payload = {'service_key': self.api,
+                   'incident_key': alert.name,
+                   'event_type': 'trigger',
+                   'description': message}
+
+        headers = {'content-type': 'application/json'}
+        try:
+            response = requests.post(url, data=json.dumps(payload), headers=headers)
+            log.debug('[PagerDutyAgent] message: %s\n%s', message, response)
+        except Exception as ex:
+            log.error('Error sending alert to PagerDuty. Error: %s', ex)
