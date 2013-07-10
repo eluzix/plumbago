@@ -8,6 +8,7 @@ README = open(os.path.join(here, 'README.md')).read()
 requires = [
     'pyyaml==3.10',
     'python-simple-hipchat==0.1',
+    'requests'
 ]
 
 test_requires = []

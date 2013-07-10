@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 
 
 class Alert(object):
+
     STATUS_OK = 0
     STATUS_ERROR = 1
     STATUS_DISABLED = 2
@@ -42,6 +43,7 @@ class Alert(object):
 
 
 class Plumbago(object):
+
     def __init__(self, config):
         self._running = False
         self._alerts = {}
@@ -50,6 +52,7 @@ class Plumbago(object):
             self.configure(config)
         except Exception as e:
             log.error('Misconfiguration. Error parsing %s', e)
+
     def configure(self, config_data):
         log.info('Loading configurations...')
         self._config_data = config_data
@@ -199,7 +202,6 @@ class Plumbago(object):
             log.error('Impossible to execute %s. Error: %s', alert.action, e)
         alert.tried_action = True
 
-
     def _parse_data(self, data):
         try:
             data = json.loads(data)
@@ -257,6 +259,7 @@ class Plumbago(object):
                         self._handle_single_alert(alert, points)
                 self._check_alerts()
             time.sleep(self._config.get('interval', 60))
+
 
     def dump_status(self):
         data = []
