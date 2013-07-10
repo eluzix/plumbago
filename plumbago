@@ -304,7 +304,7 @@ def main():
 
     parser = ArgumentParser(prog='Plumbago')
     parser.add_argument("-p", "--pid-file", dest="pid", help="Plumbago pid file", metavar="PID_FILE")
-    parser.add_argument("-c", "--config-file", dest="config", default='%s/config.yaml' % sys.path[0],
+    parser.add_argument("-c", "--config-file", dest="config", default='%s/config.yaml' % sys.path[1],
                       help="Plumbago config file",
                       metavar="CONFIG_FILE")
     parser.add_argument("-l", "--log-file", dest="log", help="Plumbago log file", metavar="LOG_FILE")
