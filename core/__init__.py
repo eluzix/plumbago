@@ -128,9 +128,9 @@ class Plumbago(object):
             username = self._config.get('username')
             if username is not None:
                 password = self._config.get('password')
-                data = requests.get(url, auth=(username, password))
+                data = requests.get(url, auth=(username, password)).content
             else:
-                data = requests.get(url)
+                data = requests.get(url).content
 
             return data
         except Exception as e:
