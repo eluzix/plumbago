@@ -299,25 +299,25 @@ def serverRunning(config):
             return False
 
 def main():
-    from optparse import OptionParser
+    from argparse import ArgumentParser
 
-    parser = OptionParser()
-    parser.add_option("-p", "--pid-file", dest="pid", help="Plumbago pid file", metavar="PID_FILE")
-    parser.add_option("-c", "--config-file", dest="config", default='%s/config.yaml' % sys.path[0],
+    parser = ArgumentParser(prog='Plumbago')
+    parser.add_argument("-p", "--pid-file", dest="pid", help="Plumbago pid file", metavar="PID_FILE")
+    parser.add_argument("-c", "--config-file", dest="config", default='%s/config.yaml' % sys.path[0],
                       help="Plumbago config file",
                       metavar="CONFIG_FILE")
-    parser.add_option("-l", "--log-file", dest="log", help="Plumbago log file", metavar="LOG_FILE")
-    parser.add_option("-s", "--server", dest="server", action="store_true", default=False, help="Run Plumbago Server")
-    parser.add_option("-d", "--disable", dest="disable", help="Disable alert [alert_name|all]",
+    parser.add_argument("-l", "--log-file", dest="log", help="Plumbago log file", metavar="LOG_FILE")
+    parser.add_argument("-s", "--server", dest="server", action="store_true", default=False, help="Run Plumbago Server")
+    parser.add_argument("-d", "--disable", dest="disable", help="Disable alert [alert_name|all]",
                       metavar="ALERT_NAME")
-    parser.add_option("-e", "--enable", dest="enable", help="Enable alert [alert_name|all]",
+    parser.add_argument("-e", "--enable", dest="enable", help="Enable alert [alert_name|all]",
                       metavar="ALERT_NAME")
-    parser.add_option("-k", "--kill", dest="kill", action="store_true", default=False, help="Kill Plumbago server")
-    parser.add_option("-r", "--reload", dest="reload", action="store_true", default=False,
+    parser.add_argument("-k", "--kill", dest="kill", action="store_true", default=False, help="Kill Plumbago server")
+    parser.add_argument("-r", "--reload", dest="reload", action="store_true", default=False,
                       help="Reload Plumbago configuration")
-    parser.add_option("-t", "--status", dest="status",
+    parser.add_argument("-t", "--status", dest="status",
                       help="Show alerts statuses [alert_name|all|error|disabled|unknown]", metavar="ALERT_NAME")
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
 
     if not options.reload and not options.status and not options.kill and not options.enable and not options.disable and not options.server:
         print "\nNothing to do..."
