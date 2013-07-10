@@ -69,6 +69,7 @@ def getAlertStatus(alertName):
             alerts = json.load(statusfile)
     except Exception as ex:
         log.error('Failed to load alerts status. Error: %s', ex)
+        return
 
     if alertName == 'all':
         for alert in alerts:
@@ -123,13 +124,13 @@ def getAlertStatus(alertName):
                 print "Cycles: %s", str(alert['cycles'])
 
                 if alert['status'] == 0:
-                    print 'Status: ' + colors.GREEN + 'OK' + colors.DEF
+                    print 'Status: %sOK%s' % (colors.GREEN, colors.DEF)
                 elif alert['status'] == 1:
-                    print 'Status: ' + colors.RED + 'ERROR' + colors.DEF
+                    print 'Status: %sERROR%s' % (colors.RED, colors.DEF)
                 elif alert['status'] == 2:
-                    print 'Status: ' + colors.GRAY + 'DISABLED' + colors.DEF
+                    print 'Status: %sDISABLED%s' % (colors.GRAY, colors.DEF)
                 elif alert['status'] == 3:
-                    print 'Status: ' + colors.YELLOW + 'UNKNOWN\n' + colors.DEF
+                    print 'Status: %sUNKNOWN%s\n' % (colors.YELLOW, colors.DEF)
 
                 try:
                     print "Comment: %s", alert['comment']
