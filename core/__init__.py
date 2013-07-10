@@ -222,7 +222,7 @@ class Plumbago(object):
                         log.warning('Unable to find agent %s for alert %s', ag, alert.name)
                         continue
                     if alert.comment:
-                        msg = agent.format_message(alert) + '\n' + alert.comment
+                        msg = '%s\n%s' % (agent.format_message(alert), alert.comment)
                     else:
                         msg = agent.format_message(alert)
                     agent.alert(msg, alert)
