@@ -101,7 +101,7 @@ def getAlertStatus(alertName):
         for alert in alerts:
             if alert['name'] == alertName:
                 found = True
-                print "\nName: %s", alert['name']
+                print "\nName: ", alert['name']
                 print "Target: %s", alert['target']
 
                 try:
