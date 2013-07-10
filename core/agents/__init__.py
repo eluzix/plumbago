@@ -1,11 +1,12 @@
 import logging
 import smtplib
+import base64
+import urllib2
+import tempfile
+import shutil
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
-import base64
-import urllib2
-import os
 
 import hipchat
 
@@ -93,12 +94,14 @@ class EmailAgent(BaseAgent):
             request.add_header("Authorization", "Basic %s" % base64string)
         result = urllib2.urlopen(request).read()
 
+        tmp_dir = tempfile.mkdtemp()
         # Save the graph to a file to attach it to the e-mail
-        try:
-            with open('/tmp/img.plum','wb') as file_:
-                file_.write(result)
-        except Exception as ex:
-            log.error('Could not save image. Error: %s', ex)
+        #try:
+        #    tmp_file = '%s/graph.plumbago' % tmp_dir
+        #    with open(tmp_file,'wb') as file_:
+        #        file_.write(result)
+        #except Exception as ex:
+        #    log.error('Could not save image. Error: %s', ex)
 
         # Prepare the header
         msg = MIMEMultipart()
@@ -119,15 +122,16 @@ class EmailAgent(BaseAgent):
         # Attach as MIME objects
         msg.attach(MIMEText(text, 'plain'))
         msg.attach(MIMEText(html, 'html'))
+        msg.attach(MIMEImage(result))
 
         # Attach the graph image as MIME object
-        try:
-            with open('/tmp/img.plum', 'rb') as file_:
-                img = MIMEImage(file_.read())
-            msg.attach(img)
-            os.remove('/tmp/img.plum')
-        except Exception as ex:
-            log.error('Could not attach image. Error: %s', ex)
+        #try:
+        #    with open(tmp_file, 'rb') as file_:
+        #        img = MIMEImage(file_.read())
+        #    msg.attach(img)
+        #    os.remove('/tmp/img.plum')
+        #except Exception as ex:
+        #    log.error('Could not attach image. Error: %s', ex)
 
         # Loop through the e-mail addresses and send the e-mail to all of them
         for to in self.to.split(','):
@@ -141,3 +145,6 @@ class EmailAgent(BaseAgent):
                 smtp_server.sendmail(self.from_, to, msg.as_string())
             except Exception as ex:
                 log.error('Error sending alert e-mail message to %s. Message: %s. Error: %s', to, message, ex)
+
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)

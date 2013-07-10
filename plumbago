@@ -6,7 +6,6 @@ import os
 import time
 import json
 import sys
-
 import yaml
 
 from core import Plumbago
