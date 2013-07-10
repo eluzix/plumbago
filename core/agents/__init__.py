@@ -85,7 +85,7 @@ class EmailAgent(BaseAgent):
         # Get a graph from graphite for the alert, authenticating if necessary
         url = '%s?from=-1hour&until=-&target=%s&target=threshold(%s,"Threshold",red)&bgcolor=black&fgcolor=white&fontBold=true&height=300&width=600&lineWidth=3&colorList=blue,red' % (self.graphurl, alert.target, str(alert.threshold))
         #if username is not None:
-        graph = requests.get(url, auth=(self.graphuser, self.graphpass))
+        graph = requests.get(url, auth=(self.graphuser, self.graphpass)).content
         log.debug('[EmailAgent] Getting graph from graphite with url: %s', url)
 
 
@@ -108,7 +108,7 @@ class EmailAgent(BaseAgent):
         # Attach as MIME objects
         msg.attach(MIMEText(text, 'plain'))
         msg.attach(MIMEText(html, 'html'))
-        msg.attach(MIMEImage(graph.content))
+        msg.attach(MIMEImage(graph))
 
         # Loop through the e-mail addresses and send the e-mail to all of them
         for to in self.to.split(','):
