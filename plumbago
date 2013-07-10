@@ -329,6 +329,7 @@ def main():
         with open(options.config, 'r') as configFile:
             config = yaml.load(configFile)
     except Exception as ex:
+        print str(sys.path[0])
         print "Could not load configuration file", options.config
         log.error('Could not load configuration file %s. Error: %s', options.config, ex)
         return
