@@ -83,7 +83,7 @@ class EmailAgent(BaseAgent):
     def alert(self, message, alert):
 
         # Get a graph from graphite for the alert, authenticating if necessary
-        url = self.graphurl + '?from=-1hour&until=-&target=' + alert.target + '&target=threshold(' + str(alert.threshold) + ',"Threshold",red)&bgcolor=black&fgcolor=white&fontBold=true&height=300&width=600&lineWidth=3&colorList=blue,red'
+        url = '%s?from=-1hour&until=-&target=%s&target=threshold(%s,"Threshold",red)&bgcolor=black&fgcolor=white&fontBold=true&height=300&width=600&lineWidth=3&colorList=blue,red' % (self.graphurl, alert.target, str(alert.threshold))
         request = urllib2.Request(url)
         username = self.graphuser
         if username is not None:
@@ -123,5 +123,6 @@ class EmailAgent(BaseAgent):
                 if self.user and self.pass_:
                     smtp_server.login(self.user, self.pass_)
                 smtp_server.sendmail(self.from_, to, msg.as_string())
+                log.debug('[EmailAgent] message: %s. Image url: %s', msg, url)
             except Exception as ex:
                 log.error('Error sending alert e-mail message to %s. Message: %s. Error: %s', to, message, ex)
