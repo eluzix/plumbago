@@ -108,7 +108,7 @@ class EmailAgent(BaseAgent):
         # Attach as MIME objects
         msg.attach(MIMEText(text, 'plain'))
         msg.attach(MIMEText(html, 'html'))
-        msg.attach(MIMEImage(graph))
+        msg.attach(MIMEImage(graph.content))
 
         # Loop through the e-mail addresses and send the e-mail to all of them
         for to in self.to.split(','):
