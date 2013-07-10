@@ -243,12 +243,12 @@ def terminateServer(pidFile):
 def startServer(config, configFileOpt):
     print "Starting server..."
     createDaemon()
-    log.info('Plumbago server started')
 
     with open(config['config']['pidfile'], 'w') as pidfile:
         pidfile.write(str(os.getpid()))
 
     server = Plumbago(config)
+    log.info('Plumbago server started')
 
     def handler(signum, frame):
         if signum == signal.SIGUSR1:

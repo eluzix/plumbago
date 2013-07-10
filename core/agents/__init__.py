@@ -77,8 +77,6 @@ class EmailAgent(BaseAgent):
         self.subject = kwargs['subject']
 
         self.graphurl = kwargs['render']
-
-
         self.graphuser = kwargs['graphuser']
         self.graphpass = kwargs['graphpass']
 
