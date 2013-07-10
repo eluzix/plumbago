@@ -78,21 +78,21 @@ class EmailAgent(BaseAgent):
 
         self.graphurl = kwargs['render']
 
-        try:
-            self.graphuser = kwargs['graphuser']
-            self.graphpass = kwargs['graphpass']
-        except:
-            pass
+
+        self.graphuser = kwargs['graphuser']
+        self.graphpass = kwargs['graphpass']
 
     def alert(self, message, alert):
 
         # Get a graph from graphite for the alert, authenticating if necessary
         url = '%s?from=-1hour&until=-&target=%s&target=threshold(%s,"Threshold",red)&bgcolor=black&fgcolor=white&fontBold=true&height=300&width=600&lineWidth=3&colorList=blue,red' % (self.graphurl, alert.target, str(alert.threshold))
-        try:
+
+        if self.graphuser is not None:
             graph = requests.get(url, auth=(self.graphuser, self.graphpass)).content
-            log.debug('[EmailAgent] Getting graph from graphite with url: %s', url)
-        except Exception as ex:
-            log.error('Could not retrieve graph. Error: %s', ex)
+        else:
+            graph = requests.get(url).content
+
+        log.debug('[EmailAgent] Getting graph from graphite with url: %s', url)
 
         # Prepare the header
         msg = MIMEMultipart()
