@@ -147,6 +147,6 @@ class PagerDutyAgent(BaseAgent):
         headers = {'content-type': 'application/json'}
         try:
             response = requests.post(url, data=json.dumps(payload), headers=headers)
-            log.debug('[PagerDutyAgent] message: %s\n%s', message, response)
+            log.debug('[PagerDutyAgent] message: %s\n%s. Json sent: %s', message, response, payload)
         except Exception as ex:
             log.error('Error sending alert to PagerDuty. Error: %s', ex)
