@@ -1,7 +1,6 @@
 import json
 import logging
 import time
-###import urllib
 from subprocess import call
 
 import requests
@@ -98,7 +97,7 @@ class Plumbago(object):
         agents = {}
         for ag in _agents:
             name = ag['name']
-            #We add the graphite url, username and password so the email agent can send a nice graph
+            # We add the graphite url, username and password so the email agent can send a nice graph
             ag['render'] = self._config['render']
 
             try:
@@ -119,10 +118,8 @@ class Plumbago(object):
             if target is None:
                 for alert in self._alerts:
                     targets.append(self._alerts[alert].target)
-                    #targets.append(urllib.quote_plus(self._alerts[alert].target))
             else:
                 targets.append(target)
-                #targets.append(urllib.quote_plus(target))
             targets = '&target=%s' % '&target='.join(targets)
 
             url = '%s?from=-5minutes&until=-&format=json%s' % (self._config['render'], targets)
