@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-import urllib
+###import urllib
 from subprocess import call
 
 import requests
@@ -118,9 +118,11 @@ class Plumbago(object):
             targets = []
             if target is None:
                 for alert in self._alerts:
-                    targets.append(urllib.quote_plus(self._alerts[alert].target))
+                    targets.append(self._alerts[alert].target)
+                    #targets.append(urllib.quote_plus(self._alerts[alert].target))
             else:
-                targets.append(urllib.quote_plus(target))
+                targets.append(target)
+                #targets.append(urllib.quote_plus(target))
             targets = '&target=%s' % '&target='.join(targets)
 
             url = '%s?from=-5minutes&until=-&format=json%s' % (self._config['render'], targets)
