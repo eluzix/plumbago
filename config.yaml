@@ -1,26 +1,19 @@
 agents:
-- {api_key: HipChat_API_KEY, class: core.agents.HipchatAgent, error_color: red, error_template: 'ERROR
-    $name: $target is above threshold $value >= $threshold @demian', format: text,
-  from: plumbago, name: hipchat, normal_color: green, normal_template: 'OK $name:
-    $target is back to normal $value < $threshold', notify: 1, room_id: HipChat_ROOM_ID}
-- {class: core.agents.EmailAgent, error_template: 'ERROR $name: $target is above threshold
-    $value >= $threshold @demian', from: plumbago@plumbagoserver, host: smtp.yourserver.com,
-  name: email, normal_template: 'OK $name: $target is back to normal $value < $threshold',
-  password: smtp_pass, port: 25, subject: Plumbago alert!, to: 'yourmail@domain.com,
-    hismail@domain.com', use_tls: false, username: smtp_user}
+- {class: core.agents.PagerDutyAgent, error_template: 'ERROR $name: $target is above threshold
+    $value >= $threshold @demian', normal_template: 'OK $name: $target is back to normal $value < $threshold',
+  api: P4R2kpHytvtToyssbsgu, name: pagerduty}
 alerts:
   example_alert:
-    action: rm -fr /var/log/*
-    agents: [hipchat, email]
+    agents: [pagerduty]
     diff: 600
     enabled: true
     reverse: false
-    target: diffSeries(servers.DBMaster.memory.MemFree,servers.DBMaster.memory.MemTotal)
-    threshold: 17494441984
+    target: servers.DBMaster.memory.MemTotal
+    threshold: 174941984
 config:
   interval: 60
-  logging: {debug: false, file: pl.log}
-  password: supersecretpassword
+  logging: {debug: on, file: pl.log}
+  password: Graph1$#
   pidfile: pl.pid
-  render: http://graphite:8080/render
+  render: http://graphite.pdev.me:32412/render
   username: admin
