@@ -265,9 +265,15 @@ class Plumbago(object):
         data = []
         for name in self._alerts:
             alert = self._alerts[name]
-            data.append({'name': alert.name, 'target': alert.target, 'status': alert.status,
-                         'enabled': str(alert.enabled), 'value': alert.status_value, 'threshold': alert.threshold,
-                         'action': alert.action, 'reverse': str(alert.reverse), 'cycles': alert.error_cycles,
+            data.append({'name': alert.name,
+                         'target': alert.target,
+                         'status': alert.status,
+                         'enabled': str(alert.enabled),
+                         'value': alert.status_value,
+                         'threshold': alert.threshold,
+                         'action': alert.action,
+                         'reverse': str(alert.reverse),
+                         'cycles': alert.error_cycles,
                          'comment': alert.comment})
         with open('/tmp/plumbago.status', 'w') as filedump:
             filedump.write(json.dumps(data, indent=1))

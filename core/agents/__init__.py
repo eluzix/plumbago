@@ -137,16 +137,22 @@ class PagerDutyAgent(BaseAgent):
         self.api = kwargs['api']
 
     def alert(self, message, alert):
-        url='https://events.pagerduty.com/generic/2010-04-15/create_event.json'
-
-        payload = {'service_key': self.api,
-                   'incident_key': alert.name,
-                   'event_type': 'trigger',
-                   'description': message}
+        url = 'https://events.pagerduty.com/generic/2010-04-15/create_event.json'
 
         headers = {'content-type': 'application/json'}
+
+        if alert.status == Alert.STATUS_ERROR:
+            payload = {'service_key': self.api,
+                       'incident_key': alert.name,
+                       'event_type': 'trigger',
+                       'description': message}
+        else:
+            payload = {'service_key': self.api,
+                       'incident_key': alert.name,
+                       'event_type': 'resolve',
+                       'description': message}
         try:
             response = requests.post(url, data=json.dumps(payload), headers=headers)
-            log.debug('[PagerDutyAgent] message: %s. Response: %s. Json sent: %s', message, response.message, payload)
+            log.debug('[PagerDutyAgent] message: %s. PagerDuty Response: %s', message, response.content)
         except Exception as ex:
             log.error('Error sending alert to PagerDuty. Error: %s', ex)

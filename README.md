@@ -62,7 +62,13 @@ agents:
     to: 'yourmail@domain.com, hismail@domain.com'
     subject: Plumbago alert!
     normal_template: "OK $name: $target is back to normal $value < $threshold"
-    error_template: "ERROR $name: $target is above threshold $value >= $threshold @demian"
+    error_template: "ERROR $name: $target is above threshold $value >= $threshold"
+
+  - name: pagerduty
+    class: core.agents.PagerDutyAgent
+    api: yourPagerDutyServiceApi
+    normal_template: "OK $name: $target is back to normal $value < $threshold"
+    error_template: "ERROR $name: $target is above threshold $value >= $threshold"
 
 alerts:
   example_alert:
@@ -83,12 +89,35 @@ alerts:
     agents:
       - hipchat
       - email
+      - pagerduty
+    #(optional, defaults to None) if set, it will be attached to normal and error templates when sending an alert.
+    comment: 'This is a test alert, do not panic!'
 ```
 
+Agents
+------
+* Hipchat
 
-Custom Agents
--------------
-At the moment Plumbago support only Hipchat as agent but its fairly easy to create one of your own.
+It will send a text message to through the hipchat api to the specified room. You can use the @tags to tag people and
+make sure they get the message.
+
+* E-mail
+
+It will send an e-mail to the specified e-mail addresses and besides the normal or error template and the optional
+comment, it will attach a graph of the alerted target for the last hour.
+
+* PagerDuty
+
+It will trigger a new incident, using the alert name as key, so as long as the alert stays in ERROR status, it will
+keep adding new events to the same incident. When the alert goes back to OK status, a resolve incident is triggered.
+
+* LoggerAgent
+
+Used for testing. It will output the normal or error messages and optional comment to the log file.
+
+* Custom Agents
+
+At the moment Plumbago only supports Hipchat, PagerDuty and E-mail as agents but its fairly easy to create one of your own.
 
 ```python
 from plumbago.agents import BaseAgent
@@ -103,7 +132,7 @@ How to use it
 -------------
 Plumbago is a CLI app, just run it with some of it's options:
 
-python plumbago.py [options]
+plumbago [options]
 
     -c, --config-file [path]: Path to plumbago config file (defaults to ./config.yaml).
     -p, --pid-file [path]: Path where to write plumbago pid file (defaults to ./plumbago.pid).
