@@ -6,8 +6,6 @@ from subprocess import call
 import requests
 
 
-__author__ = 'uzix'
-
 log = logging.getLogger(__name__)
 
 

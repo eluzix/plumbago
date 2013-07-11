@@ -11,7 +11,7 @@ import hipchat
 from core import Alert
 
 
-__author__ = 'uzix'
+__author__ = 'uzix & dembar'
 
 log = logging.getLogger(__name__)
 

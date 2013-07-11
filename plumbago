@@ -11,7 +11,7 @@ import yaml
 from core import Plumbago
 
 
-__author__ = 'uzix'
+__author__ = 'uzix & dembar'
 
 log = logging.getLogger()
 
@@ -241,7 +241,7 @@ def terminateServer(pidFile):
 
 
 def startServer(config, configFileOpt):
-    print "Starting server..."
+    print "Starting Plumbago server..."
     createDaemon()
 
     with open(config['config']['pidfile'], 'w') as pidfile:
@@ -269,7 +269,6 @@ def startServer(config, configFileOpt):
     signal.signal(signal.SIGTERM, handler)
     signal.signal(signal.SIGUSR1, handler)
     signal.signal(signal.SIGUSR2, handler)
-
     server.run()
     os.remove(config['config']['pidfile'])
     return
