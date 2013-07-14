@@ -48,10 +48,10 @@ class Plumbago(object):
         try:
             self.configure(config)
         except Exception as e:
-            log.error('Misconfiguration. Error parsing %s', e)
+            log.error('[Core] Misconfiguration. Error parsing %s', e)
 
     def configure(self, config_data):
-        log.info('Loading configurations...')
+        log.info('[Core] Loading configurations...')
         self._config_data = config_data
         self._config = config_data['config']
 
@@ -59,6 +59,7 @@ class Plumbago(object):
             _log = self._config.get('logging')
             if _log is not None:
                 logging.basicConfig()
+                logging.getLogger("requests").setLevel(logging.ERROR)
                 rlog = logging.getLogger()
                 rlog.handlers[0].formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s",
                                                            "%Y-%m-%d %H:%M:%S")
@@ -121,7 +122,7 @@ class Plumbago(object):
             targets = '&target=%s' % '&target='.join(targets)
 
             url = '%s?from=-5minutes&until=-&format=json%s' % (self._config['render'], targets)
-            log.debug('url = %s', url)
+            log.debug('[Core] url = %s', url)
             username = self._config.get('username')
             if username is not None:
                 password = self._config.get('password')
@@ -131,7 +132,7 @@ class Plumbago(object):
 
             return data
         except Exception as e:
-            log.error('Error fetching data from graphite api, error: %s', e)
+            log.error('[Core] Error fetching data from graphite api, error: %s', e)
             return None
 
     def _handle_single_alert(self, alert, points):
@@ -149,7 +150,7 @@ class Plumbago(object):
 
             if point is None:
                 alert.status = Alert.STATUS_UNKNOWN
-                log.warn('Unable to find non null data point for %s', alert.target)
+                log.warn('[Core] Unable to find non null data point for %s', alert.target)
                 return
 
             if point[1] > alert.last_ts:
@@ -197,7 +198,7 @@ class Plumbago(object):
         try:
             call(alert.action, shell=True)
         except Exception as e:
-            log.error('Impossible to execute %s. Error: %s', alert.action, e)
+            log.error('[Core] Impossible to execute %s. Error: %s', alert.action, e)
         alert.tried_action = True
 
     def _parse_data(self, data):
@@ -213,7 +214,7 @@ class Plumbago(object):
                 self._handle_single_alert(alert, points)
                 alert.data_fetched = True
         except Exception as e:
-            log.error('Error parsing data, error: %s', e)
+            log.error('[Core] Error parsing data, error: %s', e)
 
     def _check_alerts(self):
         for alert_target in self._alerts:
@@ -222,13 +223,14 @@ class Plumbago(object):
                 for ag in alert.agents:
                     agent = self._agents.get(ag)
                     if agent is None:
-                        log.warning('Unable to find agent %s for alert %s', ag, alert.name)
+                        log.warning('[Core] Unable to find agent %s for alert %s', ag, alert.name)
                         continue
                     if alert.comment:
                         msg = '%s\n%s' % (agent.format_message(alert), alert.comment)
                     else:
                         msg = agent.format_message(alert)
                     agent.alert(msg, alert)
+                    log.info('[Alert!] %s', msg)
                 alert.needs_alert = False
 
     def run(self):
@@ -244,20 +246,21 @@ class Plumbago(object):
 
                 for a in self._alerts:
                     alert = self._alerts[a]
-                    if not alert.data_fetched:
+                    if not alert.data_fetched and alert.enabled:
                         data = self._fetch_data(alert.target)
                         if data is None:
-                            log.info('Unable to find target %s for single fetch', alert.target)
+                            log.info('[Core] Unable to find target %s for single fetch', alert.target)
                             continue
                         data = json.loads(data)
                         if not len(data):
-                            log.info('Graphite sent no data for target: %s', alert.target)
+                            log.info('[Core] Graphite sent no data for target: %s', alert.target)
                             continue
                         points = data[0].get('datapoints')
                         self._handle_single_alert(alert, points)
+                    elif not alert.enabled:
+                        alert.status = Alert.STATUS_DISABLED
                 self._check_alerts()
             time.sleep(self._config.get('interval', 60))
-
 
     def dump_status(self):
         data = []

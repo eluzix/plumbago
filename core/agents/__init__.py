@@ -37,7 +37,7 @@ class BaseAgent(object):
 
 class LoggerAgent(BaseAgent):
     def alert(self, message, alert):
-        log.error(message)
+        log.error('[Logger] message: %s', message)
 
 
 class HipchatAgent(BaseAgent):
@@ -61,7 +61,7 @@ class HipchatAgent(BaseAgent):
             log.debug('[HipchatAgent] message: %s', message)
             hipster.method(url='rooms/message', method="POST", parameters=params)
         except Exception as ex:
-            log.error('Error sending alert message to hipchat. Message: %s. Error: %s', message, ex)
+            log.error('[HipchatAgent] Error sending alert message to hipchat. Message: %s. Error: %s', message, ex)
 
 
 class EmailAgent(BaseAgent):
@@ -127,7 +127,7 @@ class EmailAgent(BaseAgent):
                 smtp_server.sendmail(self.from_, to, msg.as_string())
                 log.debug('[EmailAgent] to: %s. MIME Message: %s',to, msg)
             except Exception as ex:
-                log.error('Error sending alert e-mail message to %s. Message: %s. Error: %s', to, message, ex)
+                log.error('[EmailAgent] Error sending alert e-mail message to %s. Message: %s. Error: %s', to, message, ex)
 
 
 class PagerDutyAgent(BaseAgent):
@@ -155,4 +155,4 @@ class PagerDutyAgent(BaseAgent):
             response = requests.post(url, data=json.dumps(payload), headers=headers)
             log.debug('[PagerDutyAgent] message: %s. PagerDuty Response: %s', message, response.content)
         except Exception as ex:
-            log.error('Error sending alert to PagerDuty. Error: %s', ex)
+            log.error('[PagerDutyAgent] Error sending alert to PagerDuty. Error: %s', ex)
