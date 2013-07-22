@@ -1,18 +1,17 @@
-import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
-import base64
-import urllib2
-import os
+import logging
+import json
 
+import requests
 import hipchat
 
 from core import Alert
 
 
-__author__ = 'uzix'
+__author__ = 'uzix & dembar'
 
 log = logging.getLogger(__name__)
 
@@ -35,9 +34,10 @@ class BaseAgent(object):
         template = template.replace('$value', str(alert.status_value))
         return template
 
+
 class LoggerAgent(BaseAgent):
     def alert(self, message, alert):
-        log.error(message)
+        log.error('[Logger] message: %s', message)
 
 
 class HipchatAgent(BaseAgent):
@@ -61,7 +61,8 @@ class HipchatAgent(BaseAgent):
             log.debug('[HipchatAgent] message: %s', message)
             hipster.method(url='rooms/message', method="POST", parameters=params)
         except Exception as ex:
-            log.error('Error sending alert message to hipchat. Message: %s. Error: %s', message, ex)
+            log.error('[HipchatAgent] Error sending alert message to hipchat. Message: %s. Error: %s', message, ex)
+
 
 class EmailAgent(BaseAgent):
     def __init__(self, **kwargs):
@@ -84,22 +85,14 @@ class EmailAgent(BaseAgent):
     def alert(self, message, alert):
 
         # Get a graph from graphite for the alert, authenticating if necessary
-        url = self.graphurl + '?from=-1hour&until=-&target=' + alert.target + '&target=threshold(' + str(alert.threshold) + ',"Threshold",red)&bgcolor=black&fgcolor=white&fontBold=true&height=300&width=600&lineWidth=3&colorList=blue,red'
-        request = urllib2.Request(url)
-        username = self.graphuser
-        if username is not None:
-            password = self.graphpass
-            base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
-            request.add_header("Authorization", "Basic %s" % base64string)
-        result = urllib2.urlopen(request).read()
+        url = '%s?from=-1hour&until=-&target=%s&target=threshold(%s,"Threshold",red)&bgcolor=black&fgcolor=white&fontBold=true&height=300&width=600&lineWidth=3&colorList=blue,red' % (self.graphurl, alert.target, str(alert.threshold))
 
-        # Save the graph to a file to attach it to the e-mail
-        try:
-            file_ = open('/tmp/img.plum','wb')
-            file_.write(result)
-            file_.close()
-        except Exception as ex:
-            log.error('Could not save image. Error: %s', ex)
+        if self.graphuser is not None:
+            graph = requests.get(url, auth=(self.graphuser, self.graphpass)).content
+        else:
+            graph = requests.get(url).content
+
+        log.debug('[EmailAgent] Getting graph from graphite with url: %s', url)
 
         # Prepare the header
         msg = MIMEMultipart()
@@ -120,16 +113,7 @@ class EmailAgent(BaseAgent):
         # Attach as MIME objects
         msg.attach(MIMEText(text, 'plain'))
         msg.attach(MIMEText(html, 'html'))
-
-        # Attach the graph image as MIME object
-        try:
-            file_ = open('/tmp/img.plum', 'rb')
-            img = MIMEImage(file_.read())
-            file_.close()
-            msg.attach(img)
-            os.remove('/tmp/img.plum')
-        except Exception as ex:
-            log.error('Could not attach image. Error: %s', ex)
+        msg.attach(MIMEImage(graph))
 
         # Loop through the e-mail addresses and send the e-mail to all of them
         for to in self.to.split(','):
@@ -141,5 +125,34 @@ class EmailAgent(BaseAgent):
                 if self.user and self.pass_:
                     smtp_server.login(self.user, self.pass_)
                 smtp_server.sendmail(self.from_, to, msg.as_string())
+                log.debug('[EmailAgent] to: %s. MIME Message: %s',to, msg)
             except Exception as ex:
-                log.error('Error sending alert e-mail message to %s. Message: %s. Error: %s', to, message, ex)
+                log.error('[EmailAgent] Error sending alert e-mail message to %s. Message: %s. Error: %s', to, message, ex)
+
+
+class PagerDutyAgent(BaseAgent):
+    def __init__(self, **kwargs):
+        super(PagerDutyAgent, self).__init__(**kwargs)
+
+        self.api = kwargs['api']
+
+    def alert(self, message, alert):
+        url = 'https://events.pagerduty.com/generic/2010-04-15/create_event.json'
+
+        headers = {'content-type': 'application/json'}
+
+        if alert.status == Alert.STATUS_ERROR:
+            payload = {'service_key': self.api,
+                       'incident_key': alert.name,
+                       'event_type': 'trigger',
+                       'description': message}
+        else:
+            payload = {'service_key': self.api,
+                       'incident_key': alert.name,
+                       'event_type': 'resolve',
+                       'description': message}
+        try:
+            response = requests.post(url, data=json.dumps(payload), headers=headers)
+            log.debug('[PagerDutyAgent] message: %s. PagerDuty Response: %s', message, response.content)
+        except Exception as ex:
+            log.error('[PagerDutyAgent] Error sending alert to PagerDuty. Error: %s', ex)

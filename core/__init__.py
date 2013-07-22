@@ -1,17 +1,16 @@
-import base64
 import json
 import logging
 import time
-import urllib
-import urllib2
 from subprocess import call
 
-__author__ = 'uzix'
+import requests
+
 
 log = logging.getLogger(__name__)
 
 
 class Alert(object):
+
     STATUS_OK = 0
     STATUS_ERROR = 1
     STATUS_DISABLED = 2
@@ -41,6 +40,7 @@ class Alert(object):
 
 
 class Plumbago(object):
+
     def __init__(self, config):
         self._running = False
         self._alerts = {}
@@ -48,9 +48,10 @@ class Plumbago(object):
         try:
             self.configure(config)
         except Exception as e:
-            log.error('Misconfiguration. Error parsing %s', e)
+            log.error('[Core] Misconfiguration. Error parsing %s', e)
+
     def configure(self, config_data):
-        log.info('Loading configurations...')
+        log.info('[Core] Loading configurations...')
         self._config_data = config_data
         self._config = config_data['config']
 
@@ -58,6 +59,7 @@ class Plumbago(object):
             _log = self._config.get('logging')
             if _log is not None:
                 logging.basicConfig()
+                logging.getLogger("requests").setLevel(logging.ERROR)
                 rlog = logging.getLogger()
                 rlog.handlers[0].formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s",
                                                            "%Y-%m-%d %H:%M:%S")
@@ -94,10 +96,16 @@ class Plumbago(object):
         agents = {}
         for ag in _agents:
             name = ag['name']
-            #We add the graphite url, username and password so the email agent can send a nice graph
+            # We add the graphite url, username and password so the email agent can send a nice graph
             ag['render'] = self._config['render']
-            ag['graphuser'] = self._config['username']
-            ag['graphpass'] = self._config['password']
+
+            try:
+                ag['graphuser'] = self._config['username']
+                ag['graphpass'] = self._config['password']
+            except:
+                ag['graphuser'] = None
+                ag['graphpass'] = None
+
             klass = _get_class(ag['class'])
             agent = klass(**ag)
             agents[name] = agent
@@ -108,26 +116,23 @@ class Plumbago(object):
             targets = []
             if target is None:
                 for alert in self._alerts:
-                    targets.append(urllib.quote_plus(self._alerts[alert].target))
+                    targets.append(self._alerts[alert].target)
             else:
-                targets.append(urllib.quote_plus(target))
+                targets.append(target)
             targets = '&target=%s' % '&target='.join(targets)
 
             url = '%s?from=-5minutes&until=-&format=json%s' % (self._config['render'], targets)
-            log.debug('url = %s', url)
-            request = urllib2.Request(url)
+            log.debug('[Core] url = %s', url)
             username = self._config.get('username')
             if username is not None:
                 password = self._config.get('password')
-                base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
-                request.add_header("Authorization", "Basic %s" % base64string)
-            result = urllib2.urlopen(request)
-            data = result.read()
+                data = requests.get(url, auth=(username, password)).content
+            else:
+                data = requests.get(url).content
 
-            # log.debug("results: %s", data)
             return data
         except Exception as e:
-            log.error('Error fetching data from graphite api, error: %s', e)
+            log.error('[Core] Error fetching data from graphite api, error: %s', e)
             return None
 
     def _handle_single_alert(self, alert, points):
@@ -145,7 +150,7 @@ class Plumbago(object):
 
             if point is None:
                 alert.status = Alert.STATUS_UNKNOWN
-                log.warn('Unable to find non null data point for %s', alert.target)
+                log.warn('[Core] Unable to find non null data point for %s', alert.target)
                 return
 
             if point[1] > alert.last_ts:
@@ -192,10 +197,10 @@ class Plumbago(object):
     def _execute_action(self, alert):
         try:
             call(alert.action, shell=True)
+            log.info('[Core] Executed %s for alert %s' % (alert.action, alert.name))
         except Exception as e:
-            log.error('Impossible to execute %s. Error: %s', alert.action, e)
+            log.error('[Core] Impossible to execute %s. Error: %s', alert.action, e)
         alert.tried_action = True
-
 
     def _parse_data(self, data):
         try:
@@ -210,7 +215,7 @@ class Plumbago(object):
                 self._handle_single_alert(alert, points)
                 alert.data_fetched = True
         except Exception as e:
-            log.error('Error parsing data, error: %s', e)
+            log.error('[Core] Error parsing data, error: %s', e)
 
     def _check_alerts(self):
         for alert_target in self._alerts:
@@ -219,13 +224,14 @@ class Plumbago(object):
                 for ag in alert.agents:
                     agent = self._agents.get(ag)
                     if agent is None:
-                        log.warning('Unable to find agent %s for alert %s', ag, alert.name)
+                        log.warning('[Core] Unable to find agent %s for alert %s', ag, alert.name)
                         continue
                     if alert.comment:
-                        msg = agent.format_message(alert) + '\n' + alert.comment
+                        msg = '%s\n%s' % (agent.format_message(alert), alert.comment)
                     else:
                         msg = agent.format_message(alert)
                     agent.alert(msg, alert)
+                    log.info('[Alert!] %s', msg)
                 alert.needs_alert = False
 
     def run(self):
@@ -241,17 +247,19 @@ class Plumbago(object):
 
                 for a in self._alerts:
                     alert = self._alerts[a]
-                    if not alert.data_fetched:
+                    if not alert.data_fetched and alert.enabled:
                         data = self._fetch_data(alert.target)
                         if data is None:
-                            log.info('Unable to find target %s for single fetch', alert.target)
+                            log.info('[Core] Unable to find target %s for single fetch', alert.target)
                             continue
                         data = json.loads(data)
                         if not len(data):
-                            log.info('Graphite sent no data for target: %s', alert.target)
+                            log.info('[Core] Graphite sent no data for target: %s', alert.target)
                             continue
                         points = data[0].get('datapoints')
                         self._handle_single_alert(alert, points)
+                    elif not alert.enabled:
+                        alert.status = Alert.STATUS_DISABLED
                 self._check_alerts()
             time.sleep(self._config.get('interval', 60))
 
@@ -259,10 +267,15 @@ class Plumbago(object):
         data = []
         for name in self._alerts:
             alert = self._alerts[name]
-            data.append({'name': alert.name, 'target': alert.target, 'status': alert.status,
-                         'enabled': str(alert.enabled), 'value': alert.status_value, 'threshold': alert.threshold,
-                         'action': alert.action, 'reverse': str(alert.reverse), 'cycles': alert.error_cycles,
+            data.append({'name': alert.name,
+                         'target': alert.target,
+                         'status': alert.status,
+                         'enabled': str(alert.enabled),
+                         'value': alert.status_value,
+                         'threshold': alert.threshold,
+                         'action': alert.action,
+                         'reverse': str(alert.reverse),
+                         'cycles': alert.error_cycles,
                          'comment': alert.comment})
-        filedump = open('/tmp/plumbago.status', 'w')
-        filedump.write(json.dumps(data, indent=1))
-        filedump.close()
+        with open('/tmp/plumbago.status', 'w') as filedump:
+            filedump.write(json.dumps(data, indent=1))

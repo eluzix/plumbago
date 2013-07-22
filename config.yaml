@@ -36,14 +36,22 @@ agents:
     class: core.agents.EmailAgent
     host: smtp.yourserver.com
     port: 25
+    # Set to yes if your server requires TLS
     use_tls: no
     username: smtp_user
     password: smtp_pass
     from: plumbago@plumbagoserver
+    # Comma separated list of detination e-mails
     to: 'yourmail@domain.com, hismail@domain.com'
     subject: Plumbago alert!
     normal_template: "OK $name: $target is back to normal $value < $threshold"
-    error_template: "ERROR $name: $target is above threshold $value >= $threshold @demian"
+    error_template: "ERROR $name: $target is above threshold $value >= $threshold"
+
+  - name: pagerduty
+    class: core.agents.PagerDutyAgent
+    api: yourPagerDutyServiceApi
+    normal_template: "OK $name: $target is back to normal $value < $threshold"
+    error_template: "ERROR $name: $target is above threshold $value >= $threshold"
 
 alerts:
   example_alert:
@@ -64,3 +72,6 @@ alerts:
     agents:
       - hipchat
       - email
+      - pagerduty
+    #(optional, defaults to None) if set, it will be attached to normal and error templates when sending an alert.
+    comment: 'This is a test alert, do not panic!'
