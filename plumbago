@@ -70,7 +70,7 @@ def getAlertStatus(alertName):
         log.error('Failed to load alerts status. Error: %s', ex)
         return
 
-    if alertName == 'all':
+    if alertName.lower() == 'all':
         for alert in alerts:
             if alert['status'] == 0:
                 print '%s: %sOK%s' % (alert['name'], colors.GREEN, colors.DEF)
@@ -81,24 +81,24 @@ def getAlertStatus(alertName):
             elif alert['status'] == 3:
                 print '%s: %sUNKNOWN%s' % (alert['name'], colors.YELLOW, colors.DEF)
 
-    elif alertName == 'error':
+    elif alertName.lower() == 'error':
         for alert in alerts:
             if alert['status'] == 1:
                 print '%s: %sERROR%s' % (alert['name'], colors.RED, colors.DEF)
 
-    elif alertName == 'disabled':
+    elif alertName.lower() == 'disabled':
         for alert in alerts:
             if alert['status'] == 2:
                 print '%s: %sDISABLED%s' % (alert['name'], colors.GRAY, colors.DEF)
 
-    elif alertName == 'unknown':
+    elif alertName.lower == 'unknown':
         for alert in alerts:
             if alert['status'] == 3:
                 print '%s: %sUNKNOWN%s' % (alert['name'], colors.YELLOW, colors.DEF)
     else:
         found = False
         for alert in alerts:
-            if alert['name'] == alertName:
+            if alert['name'].lower() == alertName.lower():
                 found = True
                 print "\nName:", alert['name']
                 print "Target:", alert['target']
