@@ -154,7 +154,7 @@ def enableAlert(alertName, config, configFile):
         print 'Could not open config file', configFile
         return
 
-    if alertName == 'all':
+    if alertName.lower() == 'all':
         for alert in config['alerts']:
             try:
                 if not config['alerts'][alert]['enabled']:
@@ -199,7 +199,7 @@ def disableAlert(alertName, config, configFile):
         print 'Could not open config file', configFile
         return
 
-    if alertName == 'all':
+    if alertName.lower() == 'all':
         for alert in config['alerts']:
             config['alerts'][alert]['enabled'] = False
     else:
@@ -225,7 +225,7 @@ def reloadConfig(pidFile):
         os.kill(getPlumbagoPid(pidFile), signal.SIGUSR1)
         print "Reloading Plumbago configuration..."
         log.debug('Sent USR1 SIGNAL')
-    except:
+    except OSError:
         print "Plumbago server not running!"
         exit(1)
 
@@ -235,7 +235,7 @@ def terminateServer(pidFile):
         os.kill(getPlumbagoPid(pidFile), signal.SIGTERM)
         print "Killing Plumbago server..."
         log.debug('Sent TERM signal')
-    except:
+    except OSError:
         print "Plumbago server not running!"
         exit(1)
 
@@ -287,6 +287,7 @@ def defineLogFile(config):
     except:
         return '%s/plumbago.log' % sys.path[0]
 
+
 def serverRunning(config):
     if os.path.exists(config['config']['pidfile']):
         try:
@@ -297,6 +298,7 @@ def serverRunning(config):
             os.remove(config['config']['pidfile'])
             log.debug('Removed bogus pid file')
             return False
+
 
 def main():
     from argparse import ArgumentParser

@@ -197,6 +197,7 @@ class Plumbago(object):
     def _execute_action(self, alert):
         try:
             call(alert.action, shell=True)
+            log.info('[Core] Executed %s for alert %s' % (alert.action, alert.name))
         except Exception as e:
             log.error('[Core] Impossible to execute %s. Error: %s', alert.action, e)
         alert.tried_action = True
