@@ -67,7 +67,7 @@ def getAlertStatus(alertName):
         with open('/tmp/plumbago.status', 'r') as statusfile:
             alerts = json.load(statusfile)
     except Exception as ex:
-        log.error('Failed to load alerts status. Error: %s', ex)
+        log.error('[Plumbago] Failed to load alerts status. Error: %s', ex)
         return
 
     if alertName.lower() == 'all':
@@ -180,12 +180,12 @@ def enableAlert(alertName, config, configFile):
     try:
         with open(configFile, 'w') as newConfig:
             yaml.dump(config, newConfig)
-        log.info('Enabled', alertName)
+        log.info('[Plumbago] Enabled', alertName)
         config['config']['pidfile'] = pidFile
         config['config']['logging']['file'] = logFile
         reloadConfig(config['config']['pidfile'])
     except Exception as ex:
-        log.error('Could not save new config. Error: %s', ex)
+        log.error('[Plumbago] Could not save new config. Error: %s', ex)
 
 
 def disableAlert(alertName, config, configFile):
@@ -211,20 +211,20 @@ def disableAlert(alertName, config, configFile):
     try:
         with open(configFile, 'w') as newConfig:
             yaml.dump(config, newConfig)
-        log.info('Disabled', alertName)
+        log.info('[Plumbago] Disabled', alertName)
         config['config']['pidfile'] = pidFile
         config['config']['logging']['file'] = logFile
         reloadConfig(config['config']['pidfile'])
     except Exception as ex:
         print 'Failed to write new configuration'
-        log.error('Could not save new config. Error: %s', ex)
+        log.error('[Plumbago] Could not save new config. Error: %s', ex)
 
 
 def reloadConfig(pidFile):
     try:
         os.kill(getPlumbagoPid(pidFile), signal.SIGUSR1)
         print "Reloading Plumbago configuration..."
-        log.debug('Sent USR1 SIGNAL')
+        log.debug('[Plumbago] Sent USR1 signal')
     except OSError:
         print "Plumbago server not running!"
         exit(1)
@@ -234,7 +234,7 @@ def terminateServer(pidFile):
     try:
         os.kill(getPlumbagoPid(pidFile), signal.SIGTERM)
         print "Killing Plumbago server..."
-        log.debug('Sent TERM signal')
+        log.debug('[Plumbago] Sent TERM signal')
     except OSError:
         print "Plumbago server not running!"
         exit(1)
@@ -248,7 +248,7 @@ def startServer(config, configFileOpt):
         pidfile.write(str(os.getpid()))
 
     server = Plumbago(config)
-    log.info('Plumbago server started')
+    log.info('[Plumbago] Plumbago server started')
 
     def handler(signum, frame):
         if signum == signal.SIGUSR1:
@@ -257,13 +257,13 @@ def startServer(config, configFileOpt):
                     config = yaml.load(configFile)
             except Exception as ex:
                 print "Could not load configuration file", configFileOpt
-                log.error('Could not load configuration file %s. Error: %s', configFileOpt, ex)
+                log.error('[Plumbago] Could not load configuration file %s. Error: %s', configFileOpt, ex)
                 return
             server.configure(config)
         elif signum == signal.SIGUSR2:
             server.dump_status()
         elif signum == signal.SIGTERM:
-            log.info('Received SIGTERM gracefully stopping in next runloop')
+            log.info('[Plumbago] Received SIGTERM gracefully stopping in next runloop')
             server._running = False
 
     signal.signal(signal.SIGTERM, handler)
@@ -293,10 +293,10 @@ def serverRunning(config):
         try:
             os.kill(getPlumbagoPid(config['config']['pidfile']), 0)
             return True
-        except:
+        except OSError:
             print "Removing bogus pid file..."
             os.remove(config['config']['pidfile'])
-            log.debug('Removed bogus pid file')
+            log.debug('[Plumbago] Removed bogus pid file')
             return False
 
 
@@ -334,19 +334,19 @@ def main():
         print "Could not load configuration file", options.config
         log.error('Could not load configuration file %s. Error: %s', options.config, ex)
         return
-    log.debug('Config file is:', options.config)
+    log.debug('[Plumbago] Config file is:', options.config)
 
     if not options.pid:
         config['config']['pidfile'] = definePidFile(config)
     else:
         config['config']['pidfile'] = options.pid
-    log.debug('Pid File is:', config['config']['pidfile'])
+    log.debug('[Plumbago] Pid File is:', config['config']['pidfile'])
 
     if not options.log:
         config['config']['logging']['file'] = defineLogFile(config)
     else:
         config['config']['logging']['file'] = options.log
-    log.debug('Log File is:', config['config']['logging']['file'])
+    log.debug('[Plumbago] Log File is:', config['config']['logging']['file'])
 
     if options.server:
         if not serverRunning(config):
