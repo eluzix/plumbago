@@ -252,10 +252,13 @@ class Plumbago(object):
                         if data is None:
                             log.info('[Core] Unable to find target %s for single fetch', alert.target)
                             continue
-                        data = json.loads(data)
-                        if not len(data):
-                            log.info('[Core] Graphite sent no data for target: %s', alert.target)
-                            continue
+                        try:
+                            data = json.loads(data)
+                            if not len(data):
+                                log.info('[Core] Graphite sent no data for target: %s', alert.target)
+                                continue
+                        except Exception as e:
+                            log.error('[Core] Could not read url for target: %s', alert.target)
                         points = data[0].get('datapoints')
                         self._handle_single_alert(alert, points)
                     elif not alert.enabled:
