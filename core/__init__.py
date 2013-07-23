@@ -259,6 +259,7 @@ class Plumbago(object):
                                 continue
                         except Exception as e:
                             log.error('[Core] Could not read url for target: %s', alert.target)
+                            continue
                         points = data[0].get('datapoints')
                         self._handle_single_alert(alert, points)
                     elif not alert.enabled:
