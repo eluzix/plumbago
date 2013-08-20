@@ -170,9 +170,9 @@ class OpsGenieAgent(BaseAgent):
         if alert.status == Alert.STATUS_ERROR:
             url = 'https://api.opsgenie.com/v1/json/alert'
             payload = {'customerKey': self.api,
-                   'message': message,
-                   'recipients': self.dest,
-                   'alias': alert.name}
+                       'message': message,
+                       'recipients': self.dest,
+                       'alias': alert.name}
         else:
             url = 'https://api.opsgenie.com/v1/json/alert/close'
             payload = {'customerKey': self.api,
