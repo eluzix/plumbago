@@ -165,10 +165,6 @@ class OpsGenieAgent(BaseAgent):
         self.api = kwargs['api']
         self.dest = kwargs['dest']
 
-        self.graphurl = kwargs['render']
-        self.graphuser = kwargs['graphuser']
-        self.graphpass = kwargs['graphpass']
-
     def alert(self, message, alert):
 
         if alert.status == Alert.STATUS_ERROR:
