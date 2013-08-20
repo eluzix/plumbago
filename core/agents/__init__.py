@@ -156,3 +156,53 @@ class PagerDutyAgent(BaseAgent):
             log.debug('[PagerDutyAgent] message: %s. PagerDuty Response: %s', message, response.content)
         except Exception as ex:
             log.error('[PagerDutyAgent] Error sending alert to PagerDuty. Error: %s', ex)
+
+
+class OpsGenieAgent(BaseAgent):
+    def __init__(self, **kwargs):
+        super(OpsGenieAgent, self).__init__(**kwargs)
+
+        self.api = kwargs['api']
+        self.dest = kwargs['dest']
+
+    def alert(self, message, alert):
+        if alert.status == Alert.STATUS_ERROR:
+            url = 'https://api.opsgenie.com/v1/json/alert'
+        else:
+            url = 'https://api.opsgenie.com/v1/json/close'
+
+        headers = {'content-type': 'application/json'}
+
+        payload = {'customerKey': self.api,
+                   'message': message,
+                   'recipients': self.dest,
+                   'alias': alert.name}
+
+        try:
+            response = requests.post(url, data=json.dumps(payload), headers=headers)
+            log.debug('[OpsGenieAgent] message: %s. OpsGenie Response: %s', message, response.content)
+        except Exception as ex:
+            log.error('[OpsGenieAgent] Error sending alert to OpsGenie. Error: %s', ex)
+
+
+class FlowdockAgent(BaseAgent):
+    def __init__(self, **kwargs):
+        super(FlowdockAgent, self).__init__(**kwargs)
+
+        self.api = kwargs['api']
+        self.from_ = kwargs['from']
+
+    def alert(self, message, alert):
+        url = 'https://api.flowdock.com/v1/messages/chat/%s' % self.api
+
+        headers = {'content-type': 'application/json'}
+
+        payload = {'tags': alert.name,
+                   'external_user_name': self.from_,
+                   'content': message}
+
+        try:
+            response = requests.post(url, data=json.dumps(payload), headers=headers)
+            log.debug('[FlowdockAgent] message: %s. Flowdock Response: %s', message, response.content)
+        except Exception as ex:
+            log.error('[FlowdockAgent] Error sending alert to Flowdock. Error: %s', ex)

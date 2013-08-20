@@ -12,93 +12,13 @@ All configuration is done in the config.yaml which contains 3 sections:
     # agents: list of agents (agents are used to write the actual alerts)
     # alert: alerts.
 
-An example config.yaml might be:
-
-```yaml
-config:
-  #link to the graphite's render script
-  render: http://graphite:8080/render
-  #if graphite is protected by http simple auth you can provide username/password
-  username: admin
-  password: supersecretpassword
-  #graphite query interval in seconds
-  interval: 60 #data fetch interval in seconds
-  #(optional, defaults to ./plumbago.pid) where to write plumbago server's pid number
-  pidfile: pl.pid
-  logging:
-    debug: no
-    #(optional, defaults to plumbago.log) where to write the log file (all log levels)
-    file: pl.log
-
-agents:
-  - name: hipchat
-    class: core.agents.HipchatAgent
-    api_key: HipChat_API_KEY
-    room_id: HipChat_ROOM_ID
-    from: plumbago
-    format: text
-    notify: 1
-    error_color: red
-    normal_color: green
-    #template is used to format the message, parameters:
-    #   $name: alert name
-    #   $target: alert target
-    #   $ts: alert timestamp
-    #   $threshold: alert threshold
-    #   $value: alert value
-    normal_template: "OK $name: $target is back to normal $value < $threshold"
-    error_template: "ERROR $name: $target is above threshold $value >= $threshold @demian"
-
-  - name: email
-    class: core.agents.EmailAgent
-    host: smtp.yourserver.com
-    port: 25
-    # Set to yes if your server requires TLS
-    use_tls: no
-    username: smtp_user
-    password: smtp_pass
-    from: plumbago@plumbagoserver
-    # Comma separated list of detination e-mails
-    to: 'yourmail@domain.com, hismail@domain.com'
-    subject: Plumbago alert!
-    normal_template: "OK $name: $target is back to normal $value < $threshold"
-    error_template: "ERROR $name: $target is above threshold $value >= $threshold"
-
-  - name: pagerduty
-    class: core.agents.PagerDutyAgent
-    api: yourPagerDutyServiceApi
-    normal_template: "OK $name: $target is back to normal $value < $threshold"
-    error_template: "ERROR $name: $target is above threshold $value >= $threshold"
-
-alerts:
-  example_alert:
-    #graphite target
-    target: diffSeries(servers.DBMaster.memory.MemFree,servers.DBMaster.memory.MemTotal)
-    #limit value before alerting
-    threshold: 17494441984
-    #(optional, defaults to no) if active it will check if the value goes under the threshold instead of over it
-    reverse: no
-    #(optional, defaults to yes) whether the alert will be checked or not
-    enabled: yes
-    #seconds to wait between alarms
-    diff: 600
-    #(optional, defaults to false) if set, points to a unix command (or script) that will be executed if the value
-    #exceeds the threshold. If in the following cycle the value still exceeds, then alerts to the configured agent.
-    action: "rm -fr /var/log/*"
-    #list of agents
-    agents:
-      - hipchat
-      - email
-      - pagerduty
-    #(optional, defaults to None) if set, it will be attached to normal and error templates when sending an alert.
-    comment: 'This is a test alert, do not panic!'
-```
+An example config.yaml can be found as config.yaml.orig
 
 Agents
 ------
 * Hipchat
 
-It will send a text message to through the hipchat api to the specified room. You can use the @tags to tag people and
+It will send a text message through the hipchat api to the specified room. You can use the @tags to tag people and
 make sure they get the message.
 
 * E-mail
@@ -111,13 +31,25 @@ comment, it will attach a graph of the alerted target for the last hour.
 It will trigger a new incident, using the alert name as key, so as long as the alert stays in ERROR status, it will
 keep adding new events to the same incident. When the alert goes back to OK status, a resolve incident is triggered.
 
+* OpsGenie
+
+It will open a new alert, using the alert name as an alias. When the alert goes back to OK status it will close the
+alert but not delete it, so you can use it to track down what's been going on later. It supports sending notifications
+to a specific user or group.
+
+* Flowdock
+
+It will send a text message to the flow chat specified with the api argument. You can user @tags in the message
+to tag people and make sure they receive the message. It will also add the alert name as a tag.
+
 * LoggerAgent
 
 Used for testing. It will output the normal or error messages and optional comment to the log file.
 
 * Custom Agents
 
-At the moment Plumbago only supports Hipchat, PagerDuty and E-mail as agents but its fairly easy to create one of your own.
+At the moment Plumbago supports Hipchat, PagerDuty, OpsGenie, FlowDock and E-mail as agents but its fairly easy to
+create one of your own if you think that's not enough.
 
 ```python
 from plumbago.agents import BaseAgent
@@ -132,14 +64,55 @@ How to use it
 -------------
 Plumbago is a CLI app, just run it with some of it's options:
 
-plumbago [options]
+```
+usage: server.py [-h] [--server] [--reload] [--kill] [--web]
+         [--config CONFIG_FILE] [--log-file LOG_FILE]
+         [--pid-file PID_FILE] [-a ALERT_NAME AGENT]
+         [-c ALERT_NAME INT] [-d ALERT_NAME] [-e ALERT_NAME]
+         [-f ALERT_NAME SECONDS] [-l ALERT_NAME THRESHOLD]
+         [-m ALERT_NAME COMMENT] [-r ALERT_NAME] [-s ALERT_NAME]
+         [-t ALERT_NAME TARGET] [-x ALERT_NAME ACTION]
 
-    -c, --config-file [path]: Path to plumbago config file (defaults to ./config.yaml).
-    -p, --pid-file [path]: Path where to write plumbago pid file (defaults to ./plumbago.pid).
-    -l, --log-file [path]: Path where to write plumbago log file (defaults to ./plumbago.log).
-    -s, --server: Start plumbago server.
-    -r, --reload: Reload plumbago configuration.
-    -k, --kill: Terminate plumbago server.
-    -t, --status [alert_name|all|error|disabled]: Shows alert status.
-    -d, --disable [alert_name|all]: Disable alert. Implies -r.
-    -e, --enable [alert_name|all]: Enable alert. Implies -r.
+optional arguments:
+  -h, --help            show this help message and exit
+
+Server:
+  --server              Run Plumbago Server
+  --reload              Reload Plumbago configuration
+  --kill                Kill Plumbago server
+
+Files:
+  Define where plumbago files are or go
+
+  --config CONFIG_FILE  Plumbago config file
+  --log-file LOG_FILE   Plumbago log file
+  --pid-file PID_FILE   Plumbago pid file
+
+Alerts:
+  See and modify alerts
+
+  -a ALERT_NAME AGENT, --agent ALERT_NAME AGENT
+                        Change notification agent for an alert
+                        [alert_name|all|error]
+  -c ALERT_NAME INT, --cycles ALERT_NAME INT
+                        Modify alert cycles before alerting [alert_name]
+  -d ALERT_NAME, --disable ALERT_NAME
+                        Disable alert [alert_name]
+  -e ALERT_NAME, --enable ALERT_NAME
+                        Enable alert [alert_name]
+  -f ALERT_NAME SECONDS, --diff ALERT_NAME SECONDS
+                        Modify time between alerts [alert_name]
+  -l ALERT_NAME THRESHOLD, --threshold ALERT_NAME THRESHOLD
+                        Modify alert threshold
+  -m ALERT_NAME COMMENT, --comment ALERT_NAME COMMENT
+                        Modify alert comment
+  -r ALERT_NAME, --reverse ALERT_NAME
+                        Reverse alert check [alert_name]
+  -s ALERT_NAME, --status ALERT_NAME
+                        Show alerts statuses
+                        [alert_name|all|error|disabled|unknown]
+  -t ALERT_NAME TARGET, --target ALERT_NAME TARGET
+                        Modify alert target
+  -x ALERT_NAME ACTION, --action ALERT_NAME ACTION
+                        Modify alert action
+```
