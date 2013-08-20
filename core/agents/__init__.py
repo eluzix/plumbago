@@ -165,18 +165,26 @@ class OpsGenieAgent(BaseAgent):
         self.api = kwargs['api']
         self.dest = kwargs['dest']
 
+        self.graphurl = kwargs['render']
+        self.graphuser = kwargs['graphuser']
+        self.graphpass = kwargs['graphpass']
+
     def alert(self, message, alert):
+
         if alert.status == Alert.STATUS_ERROR:
             url = 'https://api.opsgenie.com/v1/json/alert'
-        else:
-            url = 'https://api.opsgenie.com/v1/json/close'
-
-        headers = {'content-type': 'application/json'}
-
-        payload = {'customerKey': self.api,
+            payload = {'customerKey': self.api,
                    'message': message,
                    'recipients': self.dest,
                    'alias': alert.name}
+        else:
+            url = 'https://api.opsgenie.com/v1/json/alert/close'
+            payload = {'customerKey': self.api,
+                       'note': message,
+                       'notify': self.dest,
+                       'alias': alert.name}
+
+        headers = {'content-type': 'application/json'}
 
         try:
             response = requests.post(url, data=json.dumps(payload), headers=headers)
