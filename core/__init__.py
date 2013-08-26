@@ -1,9 +1,8 @@
 import json
 import logging
 import time
-from subprocess import call
-
 import requests
+from subprocess import call
 
 
 log = logging.getLogger(__name__)
@@ -14,7 +13,8 @@ class Alert(object):
     STATUS_OK = 0
     STATUS_ERROR = 1
     STATUS_DISABLED = 2
-    STATUS_UNKNOWN = 3
+    STATUS_SNOOZED = 3
+    STATUS_UNKNOWN = 4
 
     def __init__(self, name, conf):
         self.name = name
@@ -27,6 +27,7 @@ class Alert(object):
         self.action = conf.get('action', False)
         self.agents = conf['agents']
         self.comment = conf.get('comment', False)
+        self.snooze = conf.get('snooze', False)
 
         self.last_ts = 0
         self.last_value = 0
@@ -139,6 +140,9 @@ class Plumbago(object):
         if not alert.enabled:
             alert.status = Alert.STATUS_DISABLED
             return
+        if alert.snooze:
+            alert.status = Alert.STATUS_SNOOZED
+            return
         if points is not None and len(points):
             #run from end to find last viable datapoint (not null)
             points.reverse()
@@ -247,7 +251,7 @@ class Plumbago(object):
 
                 for a in self._alerts:
                     alert = self._alerts[a]
-                    if not alert.data_fetched and alert.enabled:
+                    if not alert.data_fetched and alert.enabled and not alert.snooze:
                         data = self._fetch_data(alert.target)
                         if data is None:
                             log.info('[Core] Unable to find target %s for single fetch', alert.target)
@@ -280,6 +284,7 @@ class Plumbago(object):
                          'action': alert.action,
                          'reverse': str(alert.reverse),
                          'cycles': alert.error_cycles,
-                         'comment': alert.comment})
+                         'comment': alert.comment,
+                         'snooze': alert.snooze})
         with open('/tmp/plumbago.status', 'w') as filedump:
             filedump.write(json.dumps(data, indent=1))
