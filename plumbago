@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-# import logging
 import signal
 import os
 import time
@@ -14,8 +13,6 @@ from apscheduler.scheduler import Scheduler
 from datetime import datetime, timedelta
 
 __author__ = 'uzix & dembar'
-
-# log = logging.getLogger()
 
 
 class colors:
@@ -68,14 +65,14 @@ def definePidFile(config):
     try:
         return config['config']['pidfile']
     except KeyError:
-        return '%s/plumbago.pid' % sys.path[0]
+        return '%s/plumbago.pid' % os.path.dirname(os.path.realpath(sys.argv[0]))
 
 
 def defineLogFile(config):
     try:
         return config['config']['logging']['file']
     except KeyError:
-        return '%s/plumbago.log' % sys.path[0]
+        return '%s/plumbago.log' % os.path.dirname(os.path.realpath(sys.argv[0]))
 
 
 def getAlertStatus(alertName):
@@ -169,8 +166,8 @@ def getAlertStatus(alertName):
     os.remove('/tmp/plumbago.status')
 
 
-def binaryChange(options):
-    config = loadConfig(options.config[0])
+def binaryChange(options, configFile):
+    config = loadConfig(configFile)
 
     pending = True
     while pending:
@@ -226,11 +223,11 @@ def binaryChange(options):
                 print "\nNo alert exists with that name. Try -t all to see the complete list of alerts\n"
                 return
 
-    saveConfig(options.config[0], config)
+    saveConfig(configFile, config)
 
 
-def paramChange(options):
-    config = loadConfig(options.config[0])
+def paramChange(options, configFile):
+    config = loadConfig(configFile)
 
     pending = True
     while pending:
@@ -348,7 +345,7 @@ def paramChange(options):
             print "\nNo alert exists with that name. Try -t all to see the complete list of alerts\n"
             return
 
-    saveConfig(options.config[0], config)
+    saveConfig(configFile, config)
 
 
 def startServer(config, configFileOpt):
@@ -432,14 +429,14 @@ def snooze(alert, configFile):
     if new_value > 0:
         date = datetime.now() + timedelta(minutes=new_value)
         scheduler = Scheduler(standalone=True)
-        scheduler.add_date_job(snoozeClear, date=date, args=(alert[0], config, configFile))
+        scheduler.add_date_job(snoozeClear, date=date, args=(alert[0], configFile))
         log.info('[Plumbago] Snoozed %s for %s minutes' % (alert[0], alert[1]))
         createDaemon()
         scheduler.start()
         return
 
 
-def snoozeClear(alert, config, configFile):
+def snoozeClear(alert, configFile):
     config = loadConfig(configFile)
 
     try:
@@ -521,9 +518,11 @@ def main():
     options = parser.parse_args()
 
     if not options.config:
-        config = loadConfig('%s/config.yaml' % sys.path[0])
+        configFile = '%s/config.yaml' % os.path.dirname(os.path.realpath(sys.argv[0]))
     else:
-        config = loadConfig(options.config[0])
+        configFile = options.config[0]
+
+    config = loadConfig(configFile)
 
     config['config']['pidfile'] = definePidFile(config)
     log.debug('[Plumbago] Pid File is:', config['config']['pidfile'])
@@ -532,7 +531,7 @@ def main():
 
     if options.server:
         if not serverRunning(config):
-            startServer(config, options.config)
+            startServer(config, configFile)
         else:
             print "Plumbago server already running!"
 
@@ -540,7 +539,7 @@ def main():
           or options.disable
           or options.reverse
           ):
-        binaryChange(options)
+        binaryChange(options, configFile)
 
     elif (options.agent
           or options.threshold
@@ -550,11 +549,11 @@ def main():
           or options.comment
           or options.action
           ):
-        paramChange(options)
+        paramChange(options, configFile)
 
     elif options.snooze:
         if serverRunning(config):
-            snooze(options.snooze, options.config)
+            snooze(options.snooze, configFile)
         else:
             print "Plumbago server not running!"
 
