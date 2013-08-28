@@ -36,3 +36,5 @@ nosetests.xml
 
 *.iml
 .idea
+*.log
+*.yaml
