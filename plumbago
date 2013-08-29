@@ -421,10 +421,10 @@ def snooze(alert, configFile):
 
     try:
         if config['alerts'][alert[0]]['snooze']:
-            print "Alert %s is already snoozed by %s minutes!" % (alert[0], alert[1])
+            print 'Alert %s is already snoozed by %s minutes!' % (alert[0], alert[1])
         config['alerts'][alert[0]]['snooze'] = alert[1]
     except KeyError:
-        log.error("No alert exists with that name. Try -t all to see the complete list of alerts")
+        print 'No alert exists with that name. Try -t all to see the complete list of alerts'
         return
 
     saveConfig(configFile, config)
@@ -451,7 +451,7 @@ def snoozeClear(alert, configFile):
         else:
             print "Alert %s is not snoozed", alert
     except KeyError:
-        log.error("No alert exists with that name. Try -t all to see the complete list of alerts")
+        print 'No alert exists with that name. Try -t all to see the complete list of alerts'
         return
 
 
@@ -574,7 +574,7 @@ def main():
         else:
             print "Plumbago server not running!"
 
-    if options.unsnooze:
+    elif options.unsnooze:
         snoozeClear(options.snooze, configFile)
 
     elif options.reload:
