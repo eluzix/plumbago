@@ -575,7 +575,7 @@ def main():
             print "Plumbago server not running!"
 
     if options.unsnooze:
-        snoozeClear(options.snooze[0], configFile)
+        snoozeClear(options.snooze, configFile)
 
     elif options.reload:
         if serverRunning(config):
