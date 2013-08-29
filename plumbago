@@ -420,6 +420,8 @@ def snooze(alert, configFile):
     config = loadConfig(configFile)
 
     try:
+        if config['alerts'][alert[0]]['snooze']:
+            print "Alert %s is already snoozed by %s minutes!" % (alert[0], alert[1])
         config['alerts'][alert[0]]['snooze'] = alert[1]
     except KeyError:
         log.error("No alert exists with that name. Try -t all to see the complete list of alerts")
@@ -442,13 +444,15 @@ def snoozeClear(alert, configFile):
     config = loadConfig(configFile)
 
     try:
-        config['alerts'][alert]['snooze'] = False
+        if config['alerts'][alert]['snooze']:
+            config['alerts'][alert]['snooze'] = False
+            saveConfig(configFile, config)
+            log.info("[Plumbago] Alert %s unsnoozed", alert)
+        else:
+            print "Alert %s is not snoozed", alert
     except KeyError:
         log.error("No alert exists with that name. Try -t all to see the complete list of alerts")
         return
-
-    saveConfig(configFile, config)
-    log.info("[Plumbago] Alert %s unsnoozed", alert)
 
 
 def loadConfig(configFilePath):
@@ -515,8 +519,10 @@ def main():
                              help='Modify alert target')
     alert_group.add_argument('-x', '--action', dest='action', nargs=2, metavar=('ALERT_NAME', 'ACTION'),
                              help='Modify alert action')
-    alert_group.add_argument('-z', '--snooze', dest='snooze', nargs=2, metavar=('ALERT_NAME', 'TIME'),
-                             help='Snooze alert by TIME factor')
+    alert_group.add_argument('-z', '--snooze', dest='snooze', nargs=2, metavar=('ALERT_NAME', 'MINUTES'),
+                             help='Snooze alert by MINUTES')
+    alert_group.add_argument('-u', '--unsnooze', dest='unsnooze', nargs=1, metavar='ALERT_NAME',
+                             help='Unsnooze previously snoozed alert')
 
     options = parser.parse_args()
 
@@ -567,6 +573,9 @@ def main():
             snooze(options.snooze, configFile)
         else:
             print "Plumbago server not running!"
+
+    if options.unsnooze:
+        snoozeClear(options.snooze[0], configFile)
 
     elif options.reload:
         if serverRunning(config):
