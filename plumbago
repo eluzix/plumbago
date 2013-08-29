@@ -6,13 +6,15 @@ import time
 import json
 import sys
 import yaml
+import logging
 
 from core import Plumbago
-from core import log
 from apscheduler.scheduler import Scheduler
 from datetime import datetime, timedelta
 
 __author__ = 'uzix & dembar'
+
+log = logging.getLogger()
 
 
 class colors:
@@ -420,7 +422,7 @@ def snooze(alert, configFile):
     try:
         config['alerts'][alert[0]]['snooze'] = alert[1]
     except KeyError:
-        print "\nNo alert exists with that name. Try -t all to see the complete list of alerts\n"
+        log.error("No alert exists with that name. Try -t all to see the complete list of alerts")
         return
 
     saveConfig(configFile, config)
@@ -442,10 +444,11 @@ def snoozeClear(alert, configFile):
     try:
         config['alerts'][alert]['snooze'] = False
     except KeyError:
-        print "\nNo alert exists with that name. Try -t all to see the complete list of alerts\n"
+        log.error("No alert exists with that name. Try -t all to see the complete list of alerts")
         return
 
     saveConfig(configFile, config)
+    log.info("[Plumbago] Alert %s unsnoozed", alert)
 
 
 def loadConfig(configFilePath):
@@ -525,9 +528,17 @@ def main():
     config = loadConfig(configFile)
 
     config['config']['pidfile'] = definePidFile(config)
-    log.debug('[Plumbago] Pid File is:', config['config']['pidfile'])
 
     config['config']['logging']['file'] = defineLogFile(config)
+
+    handler = logging.FileHandler(config['config']['logging']['file'])
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+    if config['config']['logging']['debug']:
+        log.setLevel(logging.DEBUG)
+    else:
+        log.setLevel(logging.INFO)
 
     if options.server:
         if not serverRunning(config):
