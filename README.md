@@ -65,13 +65,13 @@ How to use it
 Plumbago is a CLI app, just run it with some of it's options:
 
 ```
-usage: server.py [-h] [--server] [--reload] [--kill] [--web]
-         [--config CONFIG_FILE] [--log-file LOG_FILE]
-         [--pid-file PID_FILE] [-a ALERT_NAME AGENT]
-         [-c ALERT_NAME INT] [-d ALERT_NAME] [-e ALERT_NAME]
-         [-f ALERT_NAME SECONDS] [-l ALERT_NAME THRESHOLD]
-         [-m ALERT_NAME COMMENT] [-r ALERT_NAME] [-s ALERT_NAME]
-         [-t ALERT_NAME TARGET] [-x ALERT_NAME ACTION]
+usage: plumbago [-h] [--server] [--reload] [--kill] [--web]
+                [--config CONFIG_FILE] [-a ALERT_NAME AGENT]
+                [-c ALERT_NAME INT] [-d ALERT_NAME] [-e ALERT_NAME]
+                [-f ALERT_NAME SECONDS] [-l ALERT_NAME THRESHOLD]
+                [-m ALERT_NAME COMMENT] [-r ALERT_NAME] [-s ALERT_NAME]
+                [-t ALERT_NAME TARGET] [-x ALERT_NAME ACTION]
+                [-z ALERT_NAME MINUTES] [-u ALERT_NAME]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -80,13 +80,12 @@ Server:
   --server              Run Plumbago Server
   --reload              Reload Plumbago configuration
   --kill                Kill Plumbago server
+  --web                 Start web server
 
 Files:
-  Define where plumbago files are or go
+  Define where core files are or go
 
   --config CONFIG_FILE  Plumbago config file
-  --log-file LOG_FILE   Plumbago log file
-  --pid-file PID_FILE   Plumbago pid file
 
 Alerts:
   See and modify alerts
@@ -95,19 +94,19 @@ Alerts:
                         Change notification agent for an alert
                         [alert_name|all|error]
   -c ALERT_NAME INT, --cycles ALERT_NAME INT
-                        Modify alert cycles before alerting [alert_name]
+                        Modify alert cycles before alerting [alert_name|all]
   -d ALERT_NAME, --disable ALERT_NAME
-                        Disable alert [alert_name]
+                        Disable alert [alert_name|all]
   -e ALERT_NAME, --enable ALERT_NAME
-                        Enable alert [alert_name]
+                        Enable alert [alert_name|all]
   -f ALERT_NAME SECONDS, --diff ALERT_NAME SECONDS
-                        Modify time between alerts [alert_name]
+                        Modify time between alerts [alert_name|all]
   -l ALERT_NAME THRESHOLD, --threshold ALERT_NAME THRESHOLD
                         Modify alert threshold
   -m ALERT_NAME COMMENT, --comment ALERT_NAME COMMENT
                         Modify alert comment
   -r ALERT_NAME, --reverse ALERT_NAME
-                        Reverse alert check [alert_name]
+                        Reverse alert check [alert_name|error]
   -s ALERT_NAME, --status ALERT_NAME
                         Show alerts statuses
                         [alert_name|all|error|disabled|unknown]
@@ -115,4 +114,8 @@ Alerts:
                         Modify alert target
   -x ALERT_NAME ACTION, --action ALERT_NAME ACTION
                         Modify alert action
+  -z ALERT_NAME MINUTES, --snooze ALERT_NAME MINUTES
+                        Snooze alert by MINUTES
+  -u ALERT_NAME, --unsnooze ALERT_NAME
+                        Unsnooze previously snoozed alert
 ```
