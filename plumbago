@@ -6,13 +6,15 @@ import time
 import json
 import sys
 import yaml
+import logging
 
 from core import Plumbago
-from core import log
 from apscheduler.scheduler import Scheduler
 from datetime import datetime, timedelta
 
 __author__ = 'uzix & dembar'
+
+log = logging.getLogger()
 
 
 class colors:
@@ -418,9 +420,19 @@ def snooze(alert, configFile):
     config = loadConfig(configFile)
 
     try:
+        config['alerts'][alert[0]]
+
+        try:
+            config['alerts'][alert[0]]['snooze']
+            if config['alerts'][alert[0]]['snooze']:
+                print 'Alert %s has already been snoozed by %s minutes!' % (alert[0], config['alerts'][alert[0]]['snooze'])
+                return
+        except KeyError:
+            pass
         config['alerts'][alert[0]]['snooze'] = alert[1]
+
     except KeyError:
-        print "\nNo alert exists with that name. Try -t all to see the complete list of alerts\n"
+        print 'No alert exists with that name'
         return
 
     saveConfig(configFile, config)
@@ -429,8 +441,8 @@ def snooze(alert, configFile):
     if new_value > 0:
         date = datetime.now() + timedelta(minutes=new_value)
         scheduler = Scheduler(standalone=True)
-        scheduler.add_date_job(snoozeClear, date=date, args=(alert[0], configFile))
-        log.info('[Plumbago] Snoozed %s for %s minutes' % (alert[0], alert[1]))
+        scheduler.add_date_job(snoozeClear, date=date, args=(alert, configFile))
+        log.info('[Plumbago] Snoozed %s for %s minutes on %s' % (alert[0], alert[1], datetime.now().strftime("%A, %d. %B %Y %I:%M%p")))
         createDaemon()
         scheduler.start()
         return
@@ -440,12 +452,21 @@ def snoozeClear(alert, configFile):
     config = loadConfig(configFile)
 
     try:
-        config['alerts'][alert]['snooze'] = False
-    except KeyError:
-        print "\nNo alert exists with that name. Try -t all to see the complete list of alerts\n"
-        return
+        config['alerts'][alert[0]]
 
-    saveConfig(configFile, config)
+        try:
+            config['alerts'][alert[0]]['snooze']
+        except KeyError:
+            print 'Alert %s is not snoozed' % alert[0]
+            return
+
+        config['alerts'][alert[0]]['snooze'] = False
+        saveConfig(configFile, config)
+        log.info('[Plumbago] Alert %s unsnoozed' % alert[0])
+
+    except KeyError:
+        print 'No alert exists with that name (%s)' % alert[0]
+        return
 
 
 def loadConfig(configFilePath):
@@ -512,8 +533,10 @@ def main():
                              help='Modify alert target')
     alert_group.add_argument('-x', '--action', dest='action', nargs=2, metavar=('ALERT_NAME', 'ACTION'),
                              help='Modify alert action')
-    alert_group.add_argument('-z', '--snooze', dest='snooze', nargs=2, metavar=('ALERT_NAME', 'TIME'),
-                             help='Snooze alert by TIME factor')
+    alert_group.add_argument('-z', '--snooze', dest='snooze', nargs=2, metavar=('ALERT_NAME', 'MINUTES'),
+                             help='Snooze alert by MINUTES')
+    alert_group.add_argument('-u', '--unsnooze', dest='unsnooze', nargs=1, metavar='ALERT_NAME',
+                             help='Unsnooze previously snoozed alert')
 
     options = parser.parse_args()
 
@@ -525,9 +548,17 @@ def main():
     config = loadConfig(configFile)
 
     config['config']['pidfile'] = definePidFile(config)
-    log.debug('[Plumbago] Pid File is:', config['config']['pidfile'])
 
     config['config']['logging']['file'] = defineLogFile(config)
+
+    handler = logging.FileHandler(config['config']['logging']['file'])
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S")
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+    if config['config']['logging']['debug']:
+        log.setLevel(logging.DEBUG)
+    else:
+        log.setLevel(logging.INFO)
 
     if options.server:
         if not serverRunning(config):
@@ -556,6 +587,9 @@ def main():
             snooze(options.snooze, configFile)
         else:
             print "Plumbago server not running!"
+
+    elif options.unsnooze:
+        snoozeClear(options.unsnooze, configFile)
 
     elif options.reload:
         if serverRunning(config):
