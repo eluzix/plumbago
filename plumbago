@@ -420,11 +420,19 @@ def snooze(alert, configFile):
     config = loadConfig(configFile)
 
     try:
-        if config['alerts'][alert[0]]['snooze']:
-            print 'Alert %s is already snoozed by %s minutes!' % (alert[0], alert[1])
+        config['alerts'][alert[0]]
+
+        try:
+            config['alerts'][alert[0]]['snooze']
+            if config['alerts'][alert[0]]['snooze']:
+                print 'Alert %s has already been snoozed by %s minutes!' % (alert[0], config['alerts'][alert[0]]['snooze'])
+                return
+        except KeyError:
+            pass
         config['alerts'][alert[0]]['snooze'] = alert[1]
+
     except KeyError:
-        print 'No alert exists with that name. Try -t all to see the complete list of alerts'
+        print 'No alert exists with that name'
         return
 
     saveConfig(configFile, config)
@@ -433,8 +441,8 @@ def snooze(alert, configFile):
     if new_value > 0:
         date = datetime.now() + timedelta(minutes=new_value)
         scheduler = Scheduler(standalone=True)
-        scheduler.add_date_job(snoozeClear, date=date, args=(alert[0], configFile))
-        log.info('[Plumbago] Snoozed %s for %s minutes' % (alert[0], alert[1]))
+        scheduler.add_date_job(snoozeClear, date=date, args=(alert, configFile))
+        log.info('[Plumbago] Snoozed %s for %s minutes on %s' % (alert[0], alert[1], datetime.now().strftime("%A, %d. %B %Y %I:%M%p")))
         createDaemon()
         scheduler.start()
         return
@@ -444,14 +452,20 @@ def snoozeClear(alert, configFile):
     config = loadConfig(configFile)
 
     try:
-        if config['alerts'][alert]['snooze']:
-            config['alerts'][alert]['snooze'] = False
-            saveConfig(configFile, config)
-            log.info("[Plumbago] Alert %s unsnoozed", alert)
-        else:
-            print "Alert %s is not snoozed", alert
+        config['alerts'][alert[0]]
+
+        try:
+            config['alerts'][alert[0]]['snooze']
+        except KeyError:
+            print 'Alert %s is not snoozed' % alert[0]
+            return
+
+        config['alerts'][alert[0]]['snooze'] = False
+        saveConfig(configFile, config)
+        log.info('[Plumbago] Alert %s unsnoozed' % alert[0])
+
     except KeyError:
-        print 'No alert exists with that name. Try -t all to see the complete list of alerts'
+        print 'No alert exists with that name (%s)' % alert[0]
         return
 
 
@@ -575,7 +589,7 @@ def main():
             print "Plumbago server not running!"
 
     elif options.unsnooze:
-        snoozeClear(options.snooze, configFile)
+        snoozeClear(options.unsnooze, configFile)
 
     elif options.reload:
         if serverRunning(config):
