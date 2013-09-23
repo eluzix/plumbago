@@ -65,7 +65,7 @@ How to use it
 Plumbago is a CLI app, just run it with some of it's options:
 
 ```
-usage: plumbago [-h] [--server] [--reload] [--kill] [--web]
+usage: plumbago [-h] [--server] [--reload] [--kill]
                 [--config CONFIG_FILE] [-a ALERT_NAME AGENT]
                 [-c ALERT_NAME INT] [-d ALERT_NAME] [-e ALERT_NAME]
                 [-f ALERT_NAME SECONDS] [-l ALERT_NAME THRESHOLD]
@@ -80,7 +80,6 @@ Server:
   --server              Run Plumbago Server
   --reload              Reload Plumbago configuration
   --kill                Kill Plumbago server
-  --web                 Start web server
 
 Files:
   Define where core files are or go
